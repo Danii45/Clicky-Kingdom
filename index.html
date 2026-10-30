@@ -1364,6 +1364,11 @@ footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; hei
   }
   // A colour with an `owner` (in FILAMENT) sends the whole order to that person. Otherwise orders take turns,
   // and only people with an email take orders; with nobody's email added yet, it still picks so the page works.
+  // Who handles each order (every order still goes to the shared inbox). Daniel has the matte black,
+  // matte white and cyan filament, so those orders are his; every other order takes turns by order number.
+  const DANIEL_COLOURS = ['cyan', 'mblack', 'mwhite'];
+  const handlerFor = (code, colours = []) =>
+    colours.some(c => DANIEL_COLOURS.includes(c)) ? 'Daniel' : (parseInt(code.slice(3), 10) % 2 === 0 ? 'Enzo' : 'Daniel');
   const assignee = (code, colours = []) => {
     const owner = colours.map(id => byId(FILAMENT, id).owner).find(Boolean);
     const fixed = owner && TEAM.find(p => p.id === owner && p.email.trim());
@@ -1464,6 +1469,8 @@ footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; hei
     fd.append('_captcha', 'false');
     const reply = $(`${prefix}-email`).value.trim();
     if (reply) fd.append('_replyto', reply);
+    const fm = body.match(/^For: (.+)$/m);
+    if (fm) fd.append('For', fm[1]);
     fd.append('Order', body);
     if (file && file.size <= 10 * 1024 * 1024) fd.append('attachment', file, file.name);
     try {
@@ -1483,8 +1490,9 @@ footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; hei
     if (!check('o')) return;
     const colours = capsMode() ? state.slots.slice(0, state.caps).map(s => s.cap) : [state.caseFil, ...state.slots.slice(0, count()).map(s => s.cap), ...(state.extra ? [state.extraCap] : [])];
     const code = orderCode(), person = assignee(code, colours);
-    const subject = `Clicky Kingdom order ${code}: ${capsMode() ? `${state.caps} XDA keycap${state.caps > 1 ? 's' : ''}` : `${lay().name.toLowerCase()} clicker${state.extra ? ` + ${state.extra} extra keycap${state.extra > 1 ? 's' : ''}` : ''}`}`;
-    const body = [`Clicky Kingdom order ${code}`, '', ...designLines().map(([k, v]) => `${k}: ${v}`), '', ...personLines('o')].join('\n');
+    const subject = `Clicky Kingdom order ${code} for ${handlerFor(code, colours)}: ${capsMode() ? `${state.caps} XDA keycap${state.caps > 1 ? 's' : ''}` : `${lay().name.toLowerCase()} clicker${state.extra ? ` + ${state.extra} extra keycap${state.extra > 1 ? 's' : ''}` : ''}`}`;
+    const forWho = handlerFor(code, colours);
+    const body = [`Clicky Kingdom order ${code}`, `For: ${forWho}`, '', ...designLines().map(([k, v]) => `${k}: ${v}`), '', ...personLines('o')].join('\n');
     sendOrder('o', { person, code, subject, body,
       sentSteps: [[`Your order number is ${code}. Keep it handy.`], ['We’ll message you on Discord or email when it’s printed.'], ['You pay in person when you get it.']],
       manualSteps: [['Couldn’t send it automatically, so open the email with Gmail or Outlook below. It comes filled in.'], ['Check the message, then press send.'], ['We get back to you. You pay in person when you get it.']] });
@@ -1614,9 +1622,10 @@ footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; hei
     e.preventDefault();
     if (!check('c', custom.name ? '' : 'Choose your STL file first.')) return;
     const code = orderCode(), person = assignee(code, [$('c-colour').value]), s = custom.size;
-    const subject = `Clicky Kingdom custom print ${code}: ${custom.name}`;
+    const forWho = handlerFor(code, [$('c-colour').value]);
+    const subject = `Clicky Kingdom custom print ${code} for ${forWho}: ${custom.name}`;
     const body = [
-      `Clicky Kingdom custom print ${code}`, '',
+      `Clicky Kingdom custom print ${code}`, `For: ${forWho}`, '',
       `File: ${custom.name} (attached)`,
       `Size: ${mm(s.x)} × ${mm(s.y)} × ${mm(s.z)} mm`,
       `Fits our printers: ${custom.fits ? 'yes, ' + custom.fitsOn.map(p => p.name).join(' and ') : 'no, it may need to be scaled down or split'}`,

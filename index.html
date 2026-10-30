@@ -637,8 +637,7 @@ footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; hei
   // Emails are stored base64-encoded so they never appear as plain text in the page (keeps email-scraping bots away).
   const decode = s => { try { return s ? atob(s) : ''; } catch (e) { return ''; } };
   const TEAM = [
-    { id: 'shop',   name: 'Clicky Kingdom', email: decode('Y2xpY2t5a2luZ2RvbUBnbWFpbC5jb20=') },   // the shared Clicky Kingdom inbox
-    { id: 'daniel', name: 'Daniel', email: decode('ZGFuaWVsZ3JlaXptYW4yQGdtYWlsLmNvbQ==') }
+    { id: 'shop',   name: 'Clicky Kingdom', email: decode('Y2xpY2t5a2luZ2RvbUBnbWFpbC5jb20=') }   // every order goes to the shared Clicky Kingdom inbox
   ];
   // feel: 'clicky' | 'tactile' | 'linear' (shown to customers and sets the click sound)
   // sound (optional): 'crisp' = a tactile with a sharper click; color: the switch housing tint
@@ -654,14 +653,14 @@ footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; hei
     { id: 'yellow',  name: 'Yellow',      hex: '#f5cf2a' },
     { id: 'lgreen',  name: 'Light green', hex: '#8fd96a' },
     { id: 'blue',    name: 'Sky blue',    hex: '#4aa3f0' },
-    { id: 'cyan',    name: 'Cyan',        hex: '#0086d6', owner: 'daniel' }, // Bambu Lab PLA Basic Cyan (10603)
+    { id: 'cyan',    name: 'Cyan',        hex: '#0086d6' }, // Bambu Lab PLA Basic Cyan (10603)
     { id: 'purple',  name: 'Purple',      hex: '#5a2fb8' },
     { id: 'magenta', name: 'Magenta',     hex: '#d1338f' },
     { id: 'brown',   name: 'Brown',       hex: '#7a4a2c' },
     { id: 'black',   name: 'Black',       hex: '#1e1d24', rough: .32 },
-    { id: 'mblack',  name: 'Matte black', hex: '#2a2a2e', rough: .95, matte: true, owner: 'daniel' },
+    { id: 'mblack',  name: 'Matte black', hex: '#2a2a2e', rough: .95, matte: true },
     { id: 'white',   name: 'White',       hex: '#ecebf3', rough: .32 },
-    { id: 'mwhite',  name: 'Matte white', hex: '#e2e1e5', rough: .95, matte: true, owner: 'daniel' }
+    { id: 'mwhite',  name: 'Matte white', hex: '#e2e1e5', rough: .95, matte: true }
   ];
   // Keycaps-only orders: dollars per keycap, and the smallest number someone can order.
   const CAP_PRICE = 0.5, MIN_CAPS = 2;

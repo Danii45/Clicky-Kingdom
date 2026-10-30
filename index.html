@@ -1,0 +1,1687 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Clicky Kingdom: build your own keyboard clicker with real switches, pick the colours, and order it. Pay in person.">
+<meta name="theme-color" content="#5b3fd6">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 132'%3E%3Crect x='14' y='44' width='92' height='84' rx='16' fill='%23141414'/%3E%3Crect x='24' y='46' width='72' height='66' rx='12' fill='%23fff'/%3E%3Cpath d='M28 40 L34 12 L47 27 L60 6 L73 27 L86 12 L92 40 Z' fill='%23ffd23f'/%3E%3C/svg%3E">
+<style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Clicky Kingdom</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a storefront. White header with uppercase links, then a full-width purple hero (huge tight headline,
+   spaced uppercase tagline, two pill buttons, our own 3D clicker turning behind it), then the builder
+   (3D preview left, controls right), then the order and custom-STL sections. Archivo for everything, heavy and
+   tightly tracked for headlines; Geist Mono for numbers and small tags. Purple is the brand colour. */
+:root {
+  --bg: #fbfaf8;
+  --surface: #ffffff;
+  --sunken: #f2f2f0;
+  --ink: #141414;
+  --ink-2: #52524f;
+  --ink-3: #6b6b68;
+  --line: #e6e6e3;
+  --line-2: #d3d3cf;
+  --accent: #5b3fd6;
+  --accent-ink: #ffffff;
+  --accent-soft: #ece8fc;
+  --warn: #a14f0a;
+  --font: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --hero: #5b3fd6;
+  --on-hero: #ffffff;
+  --gutter-l: max(16px, env(safe-area-inset-left, 0px));
+  --gutter-r: max(16px, env(safe-area-inset-right, 0px));
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --r-s: 8px; --r-m: 12px; --r-l: 16px;
+  --swatch-ring: rgba(0, 0, 0, .14);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121212; --surface: #1a1a1a; --sunken: #212121; --ink: #f1f1ef; --ink-2: #b6b6b2; --ink-3: #93938f;
+    --line: #2b2b2b; --line-2: #3c3c3c; --accent: #a998ff; --accent-ink: #121212; --accent-soft: #262040; --warn: #f0a861;
+    --swatch-ring: rgba(255, 255, 255, .28);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121212; --surface: #1a1a1a; --sunken: #212121; --ink: #f1f1ef; --ink-2: #b6b6b2; --ink-3: #93938f;
+  --line: #2b2b2b; --line-2: #3c3c3c; --accent: #a998ff; --accent-ink: #121212; --accent-soft: #262040; --warn: #f0a861;
+  --swatch-ring: rgba(255, 255, 255, .28);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { background: var(--bg); scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink); font: 400 1rem/1.55 var(--font); -webkit-font-smoothing: antialiased;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 3rem;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--surface); }
+a { color: var(--ink); text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+::selection { background: var(--accent-soft); }
+h1, h2, h3 { margin: 0; text-wrap: balance; letter-spacing: -.035em; }
+p { margin: 0; }
+.wrap { max-width: 72rem; margin: 0 auto; }
+.sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ---------- surfaces, tags, buttons ---------- */
+.glass { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); }
+.lcd { background: var(--sunken); border-radius: var(--r-m); }
+.inds { display: flex; gap: .35rem .9rem; flex-wrap: wrap; }
+.ind { font: 500 .75rem/1.3 var(--mono); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.ind.on { color: var(--ink-2); }
+.ind.warm { color: var(--accent); }
+.eyebrow { font: 600 .8125rem/1.3 var(--font); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.label { font: 500 .875rem/1.3 var(--font); color: var(--ink); }
+.fine { font-size: .875rem; color: var(--ink-3); }
+
+.btn { min-height: 2.75rem; padding: 0 1.15rem; border-radius: 999px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink);
+  font: 500 .9375rem/1 var(--font); text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: .5rem; cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s; }
+.btn:hover { border-color: var(--ink-3); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+.btn.primary { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.btn.primary:hover { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.ghost { background: transparent; }
+.btn.small { padding: 0 .95rem; font-size: .875rem; }
+.btn.wide { width: 100%; min-height: 3.25rem; font-size: 1rem; }
+.btn svg { width: 1.1rem; height: 1.1rem; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+.chip { min-height: 2.75rem; padding: 0 .9rem; border-radius: var(--r-s); border: 1px solid var(--line); background: var(--surface);
+  font: 500 .875rem/1.2 var(--font); color: var(--ink-2); cursor: pointer; transition: border-color .15s, color .15s, box-shadow .15s; }
+.chip:hover { color: var(--ink); border-color: var(--line-2); }
+.chip[aria-pressed="true"] { color: var(--ink); border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+
+/* ---------- header ---------- */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--surface); border-bottom: 1px solid var(--line); padding-block: .95rem;
+  margin-inline: calc(-1 * var(--gutter-l)) calc(-1 * var(--gutter-r)); padding-inline: var(--gutter-l) var(--gutter-r); }
+.bar { display: flex; align-items: center; gap: 1.25rem; }
+.brand { display: flex; align-items: center; gap: .6rem; margin-right: auto; text-decoration: none; color: var(--ink); min-width: 0; }
+.brand svg { width: 2rem; height: 2.2rem; flex: none; }
+.brand .cap { fill: var(--ink); }
+.brand .cap-top { fill: var(--surface); }
+.brand .crown { fill: var(--accent); }
+.brand .letter { fill: var(--ink); font: 600 48px var(--font); }
+.word { font: 800 1.2rem/1 var(--font); letter-spacing: -.03em; white-space: nowrap; }
+.word b { font-weight: 800; color: var(--accent); }
+.nav { display: flex; gap: .5rem; }
+.nav a { color: var(--ink); text-decoration: none; font: 500 .9375rem/1 var(--font); letter-spacing: .04em; text-transform: uppercase; padding: .85rem .8rem; border-radius: var(--r-s); }
+.nav a:hover { text-decoration: underline; text-underline-offset: 6px; }
+
+/* ---------- hero ---------- */
+.hero { position: relative; overflow: hidden; background: var(--hero); color: var(--on-hero); min-height: clamp(31rem, 74vh, 47rem);
+  margin-inline: calc(-1 * var(--gutter-l)) calc(-1 * var(--gutter-r)); display: flex; justify-content: center; }
+.hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.hero-copy { position: relative; z-index: 1; width: 100%; max-width: 54rem; display: flex; flex-direction: column; align-items: center; gap: 1.1rem; text-align: center;
+  padding: clamp(3.75rem, 10vh, 6.5rem) var(--gutter-r) clamp(7rem, 16vh, 10rem) var(--gutter-l); }
+.hero-kicker { font: 500 .9375rem/1.3 var(--font); letter-spacing: .16em; text-transform: uppercase; opacity: .9; }
+.hero h1 { font: 800 clamp(3rem, 8.4vw, 6rem)/.93 var(--font); letter-spacing: -.055em; text-shadow: 0 2px 28px rgba(20, 8, 70, .25); }
+.hero-sub { font-size: clamp(1rem, 1.7vw, 1.15rem); line-height: 1.5; max-width: 37rem; opacity: .95; }
+.hero-cta { display: flex; flex-wrap: wrap; justify-content: center; gap: .75rem; margin-top: .7rem; }
+.pill { min-height: 3.4rem; padding: 0 1.6rem; border-radius: 999px; display: inline-flex; align-items: center; gap: .65rem; font: 500 1.0625rem/1 var(--font);
+  text-decoration: none; border: 1.5px solid var(--on-hero); transition: background .15s, color .15s; }
+.pill.outline { color: var(--on-hero); }
+.pill.outline:hover { background: rgba(255, 255, 255, .14); }
+.pill.solid { background: var(--on-hero); color: #141414; }
+.pill.solid:hover { background: transparent; color: var(--on-hero); }
+.pill svg { width: 1.15rem; height: 1.15rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.hero-pause { position: absolute; z-index: 1; right: max(1.1rem, env(safe-area-inset-right, 0px)); bottom: 1.1rem; width: 2.9rem; height: 2.9rem; border-radius: 50%; border: 0;
+  background: rgba(255, 255, 255, .92); color: #141414; display: grid; place-items: center; cursor: pointer; }
+.hero-pause svg { width: 1rem; height: 1rem; fill: currentColor; }
+
+/* ---------- intro + builder ---------- */
+.build { padding-top: 4.5rem; scroll-margin-top: 5rem; }
+.intro { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem 2rem; flex-wrap: wrap; padding-bottom: 1.75rem; }
+.intro h2 { font-size: clamp(2rem, 4.6vw, 3.25rem); font-weight: 800; line-height: 1; margin-top: .6rem; }
+.intro .sub { margin-top: .65rem; color: var(--ink-2); font-size: 1.0625rem; font-variant-numeric: tabular-nums; }
+.pay-note { font: 500 .8125rem/1 var(--mono); color: var(--ink-2); padding: .65rem .9rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); white-space: nowrap; }
+
+.builder { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.viewer { overflow: hidden; }
+.stage { position: relative; aspect-ratio: 4 / 3; max-width: 100%; background: var(--sunken); }
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; }
+.stage canvas.dragging { cursor: grabbing; }
+.stage-top { position: absolute; top: .9rem; left: 1rem; right: 1rem; display: flex; justify-content: space-between; gap: .6rem; flex-wrap: wrap; pointer-events: none; }
+.stage-ui { position: absolute; left: .75rem; right: .75rem; bottom: .75rem; display: flex; gap: .5rem; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; pointer-events: none; }
+.stage-ui > * { pointer-events: auto; }
+.stage-ui .hint { pointer-events: none; font-size: .875rem; color: var(--ink-3); padding: 0 .3rem .75rem; }
+.stage-fail { position: absolute; inset: 0; display: grid; place-items: center; padding: 1.5rem; text-align: center; color: var(--ink-2); }
+
+.controls { padding: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; }
+.controls > .group:not(:first-child), .controls > .fine { padding-top: 1.25rem; border-top: 1px solid var(--line); }
+.group { display: flex; flex-direction: column; gap: .65rem; min-width: 0; }
+.group-head { display: flex; justify-content: space-between; align-items: baseline; gap: .75rem; flex-wrap: wrap; }
+.group-head .val { font-size: .875rem; color: var(--ink-2); }
+.group-head .label + .label { font-weight: 400; color: var(--ink-3); }
+.seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; }
+.seg.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.seg.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.seg.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.seg .chip { min-height: 2.9rem; }
+.seg .chip b { font: 600 1.1rem/1 var(--font); color: var(--ink); margin-right: .35rem; }
+#grp-n .chip, #grp-caps .chip { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .2rem; min-height: 4.1rem; padding: .5rem .3rem; }
+#grp-n .chip b, #grp-caps .chip b { margin-right: 0; }
+.chip-price { display: block; font: 500 .8125rem/1 var(--mono); color: var(--ink-3); }
+.chip[aria-pressed="true"] .chip-price { color: var(--ink); }
+
+.slots { display: flex; flex-direction: column; gap: .45rem; }
+.slot { display: grid; grid-template-columns: 3.7rem minmax(0, 1fr) minmax(0, 1fr) auto; gap: .45rem; align-items: center; }
+.extra-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .5rem; align-items: center; }
+.stepper { display: flex; align-items: center; gap: .35rem; }
+.stepper .chip { width: 2.75rem; padding: 0; font-size: 1.25rem; }
+.stepper output { min-width: 2.2rem; text-align: center; font: 600 1.15rem/1 var(--display, var(--font)); font-variant-numeric: tabular-nums; }
+.slot.caps { grid-template-columns: 3.7rem minmax(0, 1fr); }
+.slot .k { display: flex; align-items: center; gap: .45rem; }
+.slot .k .ind { color: var(--ink-2); }
+.slot .k i { order: -1; flex: none; width: .65rem; height: .65rem; border-radius: 50%; background: var(--kc, #888); box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
+.select { appearance: none; -webkit-appearance: none; width: 100%; min-width: 0; min-height: 2.75rem; padding: 0 2rem 0 .75rem; border-radius: var(--r-s);
+  border: 1px solid var(--line); color: var(--ink); font: 400 .9375rem/1.2 var(--font); cursor: pointer;
+  background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888885' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right .75rem center / 10px 6px; }
+/* colour menus: a swatch of the chosen colour, and each option painted in its colour */
+.select.swatched { padding-left: 2.3rem;
+  background: radial-gradient(circle at 1.15rem 50%, var(--sw) 0 .5rem, var(--swatch-ring) .53rem, transparent .6rem) no-repeat,
+              var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888885' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right .75rem center / 10px 6px; }
+.select:hover { border-color: var(--line-2); }
+.select:focus { outline: none; border-color: var(--ink); box-shadow: 0 0 0 3px var(--accent-soft); }
+option { background: var(--surface); color: var(--ink); }
+.press { min-height: 2.75rem; padding: 0 .85rem; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.fixed { display: flex; align-items: center; min-width: 0; min-height: 2.75rem; padding: 0 .75rem; border-radius: var(--r-s); background: var(--sunken);
+  color: var(--ink-2); font-size: .9375rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.fils { display: flex; flex-wrap: wrap; gap: .5rem; }
+.fil { width: 2.75rem; height: 2.75rem; border-radius: 50%; padding: 0; cursor: pointer; border: 0; background: var(--c);
+  box-shadow: inset 0 0 0 1px var(--swatch-ring); transition: transform .15s, box-shadow .15s; }
+.fil.matte, .preset i.matte { background: radial-gradient(rgba(128,128,128,.25) 1px, transparent 1.3px) 0 0 / 4px 4px, var(--c); }
+.fil:active { transform: scale(.94); }
+.fil[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--swatch-ring), 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
+.presets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .4rem; }
+.preset { min-height: 2.9rem; padding: .35rem; border-radius: var(--r-s); border: 1px solid var(--line); background: var(--surface);
+  display: flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+.preset:hover { border-color: var(--line-2); }
+.preset[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.preset i { flex: none; width: 1.4rem; height: 1.4rem; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px var(--surface), inset 0 0 0 1px var(--swatch-ring); }
+.preset i + i { margin-left: -.4rem; }
+
+.left { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+@media (min-width: 921px) and (min-height: 860px) { .left { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 5.6rem); } }
+.buy { gap: 1rem; }
+.buy-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.buy-top .price-tag { margin-top: .45rem; }
+.incl { margin: 0; padding: .9rem 0 0; list-style: none; display: flex; flex-direction: column; gap: .5rem; border-top: 1px solid var(--line); }
+.incl li { display: grid; grid-template-columns: 1.1rem minmax(0, 1fr); gap: .6rem; align-items: baseline; color: var(--ink-2); font-size: .9375rem; }
+.incl li::before { content: ""; width: .7rem; height: .4rem; border-left: 2px solid var(--accent); border-bottom: 2px solid var(--accent); transform: translateY(-.15rem) rotate(-45deg); }
+.incl b { font-weight: 600; color: var(--ink); }
+.card { padding: 1.4rem 1.5rem; display: flex; flex-direction: column; gap: .75rem; min-width: 0; }
+.card.wide { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem 2rem; }
+.card-main { display: flex; flex-direction: column; gap: .45rem; flex: 1 1 22rem; min-width: 0; }
+.card-head { display: flex; align-items: baseline; gap: .75rem; flex-wrap: wrap; }
+.card h2 { font-size: 1.35rem; font-weight: 700; }
+.card p { color: var(--ink-2); max-width: 40rem; }
+.card-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.card .price-tag { font: 600 1.9rem/1 var(--font); letter-spacing: -.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.file { padding: .8rem .95rem; display: flex; flex-direction: column; gap: .2rem; }
+.file b { font: 500 1rem/1.3 var(--mono); color: var(--ink); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+
+/* ---------- order + custom ---------- */
+section.block { padding-block: 5rem 0; scroll-margin-top: 5rem; }
+.head { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1.5rem; max-width: 42rem; }
+.head h2 { font-size: clamp(2rem, 4.2vw, 3rem); font-weight: 800; line-height: 1.02; }
+.head p { color: var(--ink-2); font-size: 1.0625rem; }
+.two { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.col { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.panel { padding: 1.35rem; display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.field { display: flex; flex-direction: column; gap: .4rem; min-width: 0; margin: 0; padding: 0; border: 0; }
+.flabel { font: 500 .875rem/1.3 var(--font); color: var(--ink); }
+.flabel em { font-style: normal; font-weight: 400; color: var(--ink-3); }
+.input { width: 100%; min-height: 2.9rem; padding: .6rem .8rem; border-radius: var(--r-s); border: 1px solid var(--line-2); background: var(--surface);
+  color: var(--ink); font: 400 1rem/1.4 var(--font); transition: border-color .15s, box-shadow .15s; }
+textarea.input { min-height: 5.5rem; resize: vertical; }
+.input::placeholder { color: var(--ink-3); opacity: 1; }
+.input:focus { outline: none; border-color: var(--ink); box-shadow: 0 0 0 3px var(--accent-soft); }
+.input[aria-invalid="true"] { border-color: var(--warn); box-shadow: 0 0 0 3px color-mix(in srgb, var(--warn) 18%, transparent); }
+.pay { padding: .8rem .95rem; display: flex; flex-direction: column; gap: .2rem; }
+.pay span:last-child { color: var(--ink); }
+.err { color: var(--warn); }
+
+.summary { padding: 1.2rem 1.3rem; display: flex; flex-direction: column; gap: .75rem; border-radius: var(--r-l); }
+.summary .dot, .send .dot { font: 600 1.35rem/1.2 var(--font); letter-spacing: -.015em; overflow-wrap: anywhere; }
+.lines { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+.lines li { display: grid; grid-template-columns: 4.8rem minmax(0, 1fr); gap: .75rem; align-items: baseline; font-size: .9375rem; }
+.lines li span:first-child { font-size: .8125rem; color: var(--ink-3); }
+.lines li span:last-child { overflow-wrap: anywhere; }
+.lines i { display: inline-block; width: .7rem; height: .7rem; border-radius: 50%; margin-right: .4rem; vertical-align: -.05em; background: var(--c); box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
+
+.send { padding: 1.2rem 1.3rem 1.3rem; display: flex; flex-direction: column; gap: .9rem; border-radius: var(--r-l); background: var(--surface); border: 1px solid var(--ink); }
+.steps { margin: 0; padding: 0; list-style: none; counter-reset: s; display: flex; flex-direction: column; gap: .45rem; }
+.steps li { display: grid; grid-template-columns: 1.9rem minmax(0, 1fr); gap: .5rem; align-items: baseline; }
+.steps li::before { counter-increment: s; content: counter(s, decimal-leading-zero); font: 500 .8125rem/1 var(--mono); color: var(--ink-3); }
+.steps li.attn { color: var(--warn); font-weight: 500; }
+.steps li.attn::before { color: var(--warn); }
+.kv { display: grid; grid-template-columns: 4.6rem minmax(0, 1fr) auto; gap: .6rem; align-items: center; padding-top: .75rem; border-top: 1px solid var(--line); }
+.kv .label { font-weight: 400; color: var(--ink-3); }
+.kv .val { overflow-wrap: anywhere; font-weight: 500; }
+.kv .val.missing { color: var(--warn); font-weight: 400; }
+.mail-btns { display: grid; grid-template-columns: minmax(0, 1fr); gap: .5rem; }
+.mail-btns .btn.wide { min-height: 3rem; }
+.linkish { display: inline; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.msg { display: flex; flex-direction: column; gap: .45rem; padding-top: .75rem; border-top: 1px solid var(--line); }
+.msg-head { display: flex; justify-content: space-between; align-items: center; gap: .6rem; }
+.msg-head .label { font-weight: 400; color: var(--ink-3); }
+.msg pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 15rem; overflow: auto; padding: .75rem .85rem; border-radius: var(--r-s);
+  background: var(--sunken); font: 400 .9375rem/1.5 var(--font); color: var(--ink); }
+
+.upload { gap: 1rem; }
+.upload .stage { border-radius: var(--r-m); overflow: hidden; }
+.drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .35rem; min-height: 12.5rem; padding: 1.5rem; border-radius: var(--r-m);
+  text-align: center; cursor: pointer; border: 1.5px dashed var(--line-2); background: var(--sunken); color: var(--ink-3); transition: border-color .15s, background .15s; }
+.drop svg { width: 2.2rem; height: 2.2rem; fill: none; stroke: var(--ink-2); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.drop b { font-size: 1.0625rem; font-weight: 600; color: var(--ink); }
+.drop:hover, .drop.over { border-color: var(--ink); }
+.sr:focus-visible + .drop { outline: 2px solid var(--accent); outline-offset: 2px; }
+.drop.has { min-height: 0; flex-direction: row; padding: .8rem 1rem; gap: .7rem; }
+.drop.has svg { width: 1.4rem; height: 1.4rem; }
+.drop.has b { font-size: 1rem; }
+
+footer { margin-top: 5rem; padding-block: 1.5rem 0; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: .75rem 2rem; flex-wrap: wrap; color: var(--ink-3); font-size: .875rem; }
+
+/* ---------- narrow screens ---------- */
+@media (max-width: 920px) {
+  .builder, .two { grid-template-columns: minmax(0, 1fr); }
+  .left { display: contents; }           /* phone order: preview, controls, then the summary */
+  .viewer { order: 1; } .controls { order: 2; } .buy { order: 3; }
+}
+@media (max-width: 720px) {
+  .nav { display: none; }
+}
+@media (max-width: 560px) {
+  .build { padding-top: 1.75rem; }
+  .slot { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .slot .k { grid-column: 1; grid-row: 1; }
+  .slot .press { grid-column: 2; grid-row: 1; justify-self: end; }
+  .stage { aspect-ratio: 1 / 1; }
+  .stage-ui .hint { display: none; }
+  .kv { grid-template-columns: minmax(0, 1fr) auto; }
+  .kv .label { grid-column: 1 / -1; }
+  .pay-note { white-space: normal; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+/* ---------- colour pass: a playful candy palette on top of the purple ---------- */
+:root { --pink: #ff4f9a; --orange: #ff8a1f; --yellow: #ffd23f; --sky: #2fb4ff; --green: #3fcf6e;
+  --pink-ink: #c8186a; --orange-ink: #b85300; --sky-ink: #0074b8;
+  --tint-pink: #fff0f6; --tint-blue: #ecf7ff; --tint-yellow: #fff8e0;
+  --display: "Bricolage Grotesque", "Archivo", system-ui, sans-serif; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --pink-ink: #ff7ab4; --orange-ink: #ffa552; --sky-ink: #6ccaff;
+  --tint-pink: #2a1720; --tint-blue: #14212b; --tint-yellow: #29230f; } }
+:root[data-theme="dark"] { --pink-ink: #ff7ab4; --orange-ink: #ffa552; --sky-ink: #6ccaff; --tint-pink: #2a1720; --tint-blue: #14212b; --tint-yellow: #29230f; }
+
+h1, h2, .word, .price-tag, .card h2, .summary .dot, .send .dot { font-family: var(--display) !important; }
+.hero h1, .intro h2, .head h2 { font-weight: 800; letter-spacing: -.045em; }
+
+/* logo: every letter its own colour */
+.word { font-weight: 800; font-size: 1.35rem; letter-spacing: -.02em; }
+.word i { font-style: normal; }
+.l0 { color: var(--pink); } .l1 { color: var(--orange); } .l2 { color: #e0a800; } .l3 { color: var(--sky); } .l4 { color: var(--accent); }
+.brand .crown { fill: var(--yellow); stroke: #e0a800; stroke-width: 2; }
+
+/* hero: coloured words, yellow kicker, candy pills, confetti dots */
+.hero { background: var(--hero); }
+.hero::before { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(circle at 8% 22%, var(--pink) 0 34px, transparent 35px),
+    radial-gradient(circle at 92% 18%, var(--yellow) 0 24px, transparent 25px),
+    radial-gradient(circle at 14% 78%, var(--sky) 0 20px, transparent 21px),
+    radial-gradient(circle at 86% 70%, var(--orange) 0 40px, transparent 41px),
+    radial-gradient(circle at 70% 8%, var(--green) 0 12px, transparent 13px),
+    radial-gradient(circle at 30% 10%, var(--orange) 0 10px, transparent 11px); }
+.hero-kicker { color: var(--yellow); opacity: 1; font-weight: 600; }
+.hl-y { color: var(--yellow); }
+.hl-p { color: #ffb3d6; }
+.pill.solid { background: var(--yellow); border-color: var(--yellow); color: #1a1405; }
+.pill.solid:hover { background: transparent; color: var(--yellow); }
+
+/* section labels and bands */
+.eyebrow.c-pink { color: var(--pink-ink); } .eyebrow.c-orange { color: var(--orange-ink); } .eyebrow.c-blue { color: var(--sky-ink); }
+#order, #custom { padding-bottom: 4.5rem; margin-top: 4rem; clip-path: inset(0 -100vmax); }
+#order { background: var(--tint-pink); box-shadow: 0 0 0 100vmax var(--tint-pink); }
+#custom { background: var(--tint-blue); box-shadow: 0 0 0 100vmax var(--tint-blue); margin-top: 0; }
+#order > *, #custom > * { max-width: 72rem; margin-inline: auto; }
+#order .head, #custom .head { margin-inline: auto; max-width: 72rem; }
+#order .head > *, #custom .head > * { max-width: 42rem; }
+
+/* buttons and selections pick up colour */
+.btn.primary { background: var(--pink); border-color: var(--pink); color: #fff; }
+.btn.primary:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.top .btn.primary { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.chip[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+.chip[aria-pressed="true"] .chip-price { color: var(--pink-ink); }
+.preset[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.fil[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--swatch-ring), 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
+.buy { background: var(--tint-yellow); border-color: color-mix(in srgb, var(--yellow) 55%, var(--line)); }
+.buy .price-tag { color: var(--orange-ink) !important; }
+.incl li::before { border-color: var(--green); }
+.send { border-color: var(--pink); }
+footer { border-top: 0; position: relative; }
+footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px; border-radius: 4px;
+  background: linear-gradient(90deg, var(--pink) 0 20%, var(--orange) 20% 40%, var(--yellow) 40% 60%, var(--sky) 60% 80%, var(--accent) 80%); }
+@media (max-width: 560px) { .hero::before { opacity: .7; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="bar wrap">
+    <a class="brand" href="#build" aria-label="Clicky Kingdom, back to the builder">
+      <svg viewBox="0 0 120 132" aria-hidden="true">
+        <rect class="cap" x="14" y="44" width="92" height="84" rx="16"/>
+        <rect class="cap-top" x="24" y="46" width="72" height="66" rx="12"/>
+        <text class="letter" x="60" y="97" text-anchor="middle">C</text>
+        <path class="crown" d="M28 40 L34 12 L47 27 L60 6 L73 27 L86 12 L92 40 Z"/>
+        <circle class="crown" cx="34" cy="11" r="5"/><circle class="crown" cx="60" cy="6" r="5"/><circle class="crown" cx="86" cy="11" r="5"/>
+      </svg>
+      <span class="word"><i class="l0">C</i><i class="l1">l</i><i class="l2">i</i><i class="l3">c</i><i class="l4">k</i><i class="l0">y</i> <i class="l0">K</i><i class="l1">i</i><i class="l2">n</i><i class="l3">g</i><i class="l4">d</i><i class="l0">o</i><i class="l1">m</i></span>
+    </a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#build">Build</a>
+      <a href="#order">Order</a>
+      <a href="#custom">Custom STL</a>
+    </nav>
+    <a class="btn primary small" href="#order">Order</a>
+  </div>
+</header>
+
+<section class="hero" aria-labelledby="hero-title">
+  <canvas id="hero-canvas" aria-hidden="true"></canvas>
+  <div class="hero-copy">
+    <p class="hero-kicker">Real switches. Your colours.</p>
+    <h1 id="hero-title">Clicks <span class="hl-y">you</span> can <span class="hl-p">carry.</span></h1>
+    <p class="hero-sub">Pocket-size clickers built with real mechanical keyboard switches, printed in the colours you pick. Order online, pay in person.</p>
+    <div class="hero-cta">
+      <a class="pill outline" href="#build">Build your clicker <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a>
+      <a class="pill solid" href="#custom">Send your own STL <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a>
+    </div>
+  </div>
+  <button class="hero-pause" id="hero-pause" type="button" aria-label="Pause the animation" aria-pressed="false"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="2" width="3.5" height="12" rx="1"/><rect x="9.5" y="2" width="3.5" height="12" rx="1"/></svg></button>
+</section>
+
+<main class="wrap">
+  <section class="build" id="build" aria-labelledby="build-title">
+    <div class="intro">
+      <div>
+        <p class="eyebrow c-pink">Build yours</p>
+        <h2 id="build-title">Pick every part</h2>
+        <p class="sub" id="lcd-sub">3 keys · Keychron Mint · $5</p>
+      </div>
+      <p class="pay-note">Pay in person · no online payment</p>
+    </div>
+
+    <div class="builder">
+      <div class="left">
+      <div class="viewer glass">
+        <div class="stage" id="stage">
+          <canvas id="stage-canvas" role="img" aria-label="3D view of your clicker. Drag to turn it, tap a key to click it."></canvas>
+          <div class="stage-top"><span class="ind on" id="dims">65.2 × 27.1 × 12.0 mm</span><span class="ind on"><span id="click-ind">Clicks</span> <span id="clicks">0</span></span></div>
+          <p class="stage-fail" id="stage-fail" hidden>The 3D view couldn’t load here. Everything else on the page still works.</p>
+          <div class="stage-ui">
+            <span class="hint" id="stage-hint">Drag to turn it. Hold a key down, then let go.</span>
+            <div class="chips">
+              <button class="chip" type="button" id="btn-parts" aria-pressed="false">Show parts</button>
+              <button class="chip" type="button" id="btn-sound" aria-pressed="true">Sound on</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <article class="card glass buy" aria-labelledby="buy-title">
+        <div class="buy-top">
+          <div>
+            <h3 class="eyebrow" id="buy-title">Your clicker</h3>
+            <p class="price-tag" id="next-price">$5</p>
+          </div>
+          <span class="ind">Pay in person</span>
+        </div>
+        <ul class="incl" id="incl"></ul>
+        <div class="card-actions">
+          <a class="btn primary" href="#order" id="next-order">Order this clicker</a>
+          <a class="btn" href="#custom">Send your own STL</a>
+        </div>
+        <p class="fine">No paying online. You pay in person when you get it.</p>
+      </article>
+      </div>
+
+      <div class="controls glass">
+        <div class="group">
+          <span class="label" id="lbl-mode">What you want</span>
+          <div class="seg two" role="group" aria-labelledby="lbl-mode">
+            <button class="chip" type="button" data-mode="clicker" aria-pressed="true">Clicker</button>
+            <button class="chip" type="button" data-mode="caps" aria-pressed="false">Keycaps only</button>
+          </div>
+        </div>
+        <div class="group" id="grp-caps" hidden>
+          <div class="group-head"><span class="label" id="lbl-caps">How many keycaps</span><span class="val">50¢ each, 2 to 10 · fit MX switches</span></div>
+          <div class="seg" role="group" aria-labelledby="lbl-caps">
+            <button class="chip" type="button" data-caps="2" aria-pressed="false" aria-label="2 keycaps"><b>2</b></button>
+            <button class="chip" type="button" data-caps="3" aria-pressed="false" aria-label="3 keycaps"><b>3</b></button>
+            <button class="chip" type="button" data-caps="4" aria-pressed="true" aria-label="4 keycaps"><b>4</b></button>
+            <button class="chip" type="button" data-caps="5" aria-pressed="false" aria-label="5 keycaps"><b>5</b></button>
+            <button class="chip" type="button" data-caps="6" aria-pressed="false" aria-label="6 keycaps"><b>6</b></button>
+            <button class="chip" type="button" data-caps="7" aria-pressed="false" aria-label="7 keycaps"><b>7</b></button>
+            <button class="chip" type="button" data-caps="8" aria-pressed="false" aria-label="8 keycaps"><b>8</b></button>
+            <button class="chip" type="button" data-caps="9" aria-pressed="false" aria-label="9 keycaps"><b>9</b></button>
+            <button class="chip" type="button" data-caps="10" aria-pressed="false" aria-label="10 keycaps"><b>10</b></button>
+          </div>
+        </div>
+        <div class="group" id="grp-n">
+          <span class="label" id="lbl-n">How many keys</span>
+          <div class="seg" role="group" aria-labelledby="lbl-n">
+            <button class="chip" type="button" data-n="1" aria-pressed="false"><b>1</b>key</button>
+            <button class="chip" type="button" data-n="2" aria-pressed="false"><b>2</b>keys</button>
+            <button class="chip" type="button" data-n="3" aria-pressed="true"><b>3</b>keys</button>
+            <button class="chip" type="button" data-n="4" aria-pressed="false"><b>4</b>keys</button>
+            <button class="chip" type="button" data-n="2x2" aria-pressed="false"><b>2×2</b>grid</button>
+            <button class="chip" type="button" data-n="3x3" aria-pressed="false"><b>3×3</b>grid</button>
+          </div>
+        </div>
+        <div class="group">
+          <div class="group-head"><span class="label" id="lbl-presets">Colour presets</span><span class="val" id="preset-name">Royal</span></div>
+          <div class="presets" id="presets" role="group" aria-labelledby="lbl-presets"></div>
+        </div>
+        <div class="group">
+          <div class="group-head"><span class="label" id="slots-title">Each key</span><span class="label" id="slots-cols">Switch · keycap</span></div>
+          <div class="slots" id="slots"></div>
+        </div>
+        <div class="group" id="grp-extra">
+          <div class="group-head"><span class="label" id="lbl-extra">Extra keycaps</span><span class="val">50¢ each · spares to swap in</span></div>
+          <div class="extra-row">
+            <div class="stepper" role="group" aria-labelledby="lbl-extra">
+              <button class="chip" type="button" id="extra-minus" aria-label="One less extra keycap">−</button>
+              <output id="extra-n" aria-live="polite">0</output>
+              <button class="chip" type="button" id="extra-plus" aria-label="One more extra keycap">+</button>
+            </div>
+            <select class="select" id="extra-cap" aria-label="Extra keycap colour"></select>
+          </div>
+        </div>
+        <div class="group" id="grp-case">
+          <div class="group-head"><span class="label" id="lbl-case">Case colour</span><span class="val" id="case-name">Purple</span></div>
+          <div class="fils" id="case-fils" role="group" aria-labelledby="lbl-case"></div>
+        </div>
+        <p class="fine" id="build-note">Every clicker comes with Keychron Mint switches. 1-key and 2-key clickers can also have Epomaker Creamy Jade linear switches.</p>
+      </div>
+    </div>
+
+  </section>
+
+  <section class="block" id="order" aria-labelledby="order-title">
+    <div class="head">
+      <p class="eyebrow c-orange">Order</p>
+      <h2 id="order-title">Order this clicker</h2>
+      <p>Fill this in and press Send. Your order comes straight to us, and we’ll get back to you. You pay in person when you pick it up.</p>
+    </div>
+    <div class="two">
+      <form class="panel glass" id="o-form" novalidate>
+        <label class="field"><span class="flabel">Your name</span><input class="input" id="o-name" autocomplete="name" maxlength="80"></label>
+        <label class="field"><span class="flabel">Your class</span><input class="input" id="o-class" maxlength="60" placeholder="Your class or homeroom"></label>
+        <label class="field"><span class="flabel">Your Discord username <em>· or email below</em></span><input class="input" id="o-discord" maxlength="40" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="e.g. clickyfan123"></label>
+        <label class="field"><span class="flabel">Your email <em>· or Discord above</em></span><input class="input" id="o-email" type="email" maxlength="120" autocomplete="email" placeholder="you@example.com"></label>
+        <label class="field"><span class="flabel">Where should we meet? <em>· optional</em></span><input class="input" id="o-where" maxlength="120"></label>
+        <label class="field"><span class="flabel">Notes <em>· optional</em></span><textarea class="input" id="o-notes" rows="3" maxlength="1200" placeholder="Anything else we should know"></textarea></label>
+        <div class="pay lcd"><span class="ind">No online payment</span><span>You pay in person when you get your clicker.</span></div>
+        <button class="btn primary wide" type="submit">Send my order</button>
+        <p class="fine err" id="o-err" role="alert" hidden></p>
+      </form>
+      <div class="col">
+        <div class="summary lcd">
+          <div class="inds"><span class="ind">Your order</span><span class="ind" id="o-sum-n">3-key</span></div>
+          <div class="dot" id="o-sum-title">3-key clicker</div>
+          <ul class="lines" id="o-lines"></ul>
+          <a href="#build">Change the design</a>
+        </div>
+        <div class="send lcd" id="o-send" hidden>
+          <div class="inds"><span class="ind">Ready</span><span class="ind" data-f="code">CK-0000</span><span class="ind">Pay in person</span></div>
+          <div class="dot" data-f="headline">Email ready</div>
+          <ol class="steps" data-f="steps"></ol>
+          <div class="kv" data-f="torow" hidden><span class="label">To</span><span class="val" data-f="to"></span><button class="btn small ghost" type="button" data-copy="to">Copy</button></div>
+          <div class="kv"><span class="label">Subject</span><span class="val" data-f="subject"></span><button class="btn small ghost" type="button" data-copy="subject">Copy</button></div>
+          <div class="msg"><div class="msg-head"><span class="label">Message</span><button class="btn small ghost" type="button" data-copy="body">Copy</button></div><pre data-f="body"></pre></div>
+          <div class="mail-btns">
+            <a class="btn primary wide" data-f="gmail" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4zM4 7l8 6 8-6"/></svg>Open in Gmail</a>
+            <a class="btn wide" data-f="outlook" href="#" target="_blank" rel="noopener">Open in Outlook</a>
+            <a class="btn ghost wide" data-f="mailto" href="#">Other email app</a>
+          </div>
+          <p class="fine" data-f="note">If none of these open, <button class="linkish" type="button" data-show="torow">show our email address</button> and copy the subject and message into a new email.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="custom" aria-labelledby="custom-title">
+    <div class="head">
+      <p class="eyebrow c-blue">Custom STL</p>
+      <h2 id="custom-title">Print your own design</h2>
+      <p>Got an STL file? Check it here, then send it to us. We print on Bambu Lab P1 printers, so it has to fit inside 256 × 256 × 256 mm. You pay in person, same as any order.</p>
+    </div>
+    <div class="two">
+      <div class="panel glass upload">
+        <input type="file" id="c-file" class="sr" accept=".stl">
+        <label for="c-file" class="drop" id="c-drop">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7.5v9L12 21l8-4.5v-9z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/></svg>
+          <b id="c-drop-title">Choose an STL file</b>
+          <span id="c-drop-sub">or drop it here</span>
+        </label>
+        <div class="stage" id="c-stage" hidden>
+          <canvas id="c-canvas" role="img" aria-label="3D view of your STL file. Drag to turn it."></canvas>
+          <div class="stage-top"><span class="ind on">Your file</span><span class="ind on" id="c-tris"></span></div>
+        </div>
+        <div class="file lcd">
+          <span class="ind" id="c-fit">No file yet</span>
+          <b id="c-size">Pick a file to see its size</b>
+        </div>
+        <p class="fine err" id="c-file-err" role="alert" hidden></p>
+      </div>
+      <div class="col">
+        <form class="panel glass" id="c-form" novalidate>
+          <label class="field"><span class="flabel">Your name</span><input class="input" id="c-name" autocomplete="name" maxlength="80"></label>
+          <label class="field"><span class="flabel">Your class</span><input class="input" id="c-class" maxlength="60" placeholder="Your class or homeroom"></label>
+          <label class="field"><span class="flabel">Your Discord username <em>· or email below</em></span><input class="input" id="c-discord" maxlength="40" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="e.g. clickyfan123"></label>
+          <label class="field"><span class="flabel">Your email <em>· or Discord above</em></span><input class="input" id="c-email" type="email" maxlength="120" autocomplete="email" placeholder="you@example.com"></label>
+          <label class="field"><span class="flabel">Colour</span><select class="select" id="c-colour"></select></label>
+          <label class="field"><span class="flabel">Where should we meet? <em>· optional</em></span><input class="input" id="c-where" maxlength="120"></label>
+          <label class="field"><span class="flabel">Notes <em>· optional</em></span><textarea class="input" id="c-notes" rows="3" maxlength="1200" placeholder="How many, which way up, anything else"></textarea></label>
+          <div class="pay lcd"><span class="ind">No online payment</span><span>You pay in person when you get your print.</span></div>
+          <button class="btn primary wide" type="submit">Send my file</button>
+          <p class="fine err" id="c-err" role="alert" hidden></p>
+        </form>
+        <div class="send lcd" id="c-send" hidden>
+          <div class="inds"><span class="ind">Ready</span><span class="ind" data-f="code">CK-0000</span><span class="ind">Pay in person</span></div>
+          <div class="dot" data-f="headline">Email ready</div>
+          <ol class="steps" data-f="steps"></ol>
+          <div class="kv" data-f="torow" hidden><span class="label">To</span><span class="val" data-f="to"></span><button class="btn small ghost" type="button" data-copy="to">Copy</button></div>
+          <div class="kv"><span class="label">Subject</span><span class="val" data-f="subject"></span><button class="btn small ghost" type="button" data-copy="subject">Copy</button></div>
+          <div class="msg"><div class="msg-head"><span class="label">Message</span><button class="btn small ghost" type="button" data-copy="body">Copy</button></div><pre data-f="body"></pre></div>
+          <div class="mail-btns">
+            <a class="btn primary wide" data-f="gmail" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4zM4 7l8 6 8-6"/></svg>Open in Gmail</a>
+            <a class="btn wide" data-f="outlook" href="#" target="_blank" rel="noopener">Open in Outlook</a>
+            <a class="btn ghost wide" data-f="mailto" href="#">Other email app</a>
+          </div>
+          <p class="fine" data-f="note">If none of these open, <button class="linkish" type="button" data-show="torow">show our email address</button>, copy the subject and message into a new email, and attach your file.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">
+  <p>Clicky Kingdom · keyboard clickers by Daniel and Enzo</p>
+  <p>Pay in person · no online payment</p>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  'use strict';
+
+  /* ============================================================
+     EDIT THESE LISTS. Emails, keys and filament are placeholders.
+     ============================================================ */
+  // Who orders go to. Customers never see the names. Even order numbers go to the first person, odd to the second.
+  // Emails are stored base64-encoded so they never appear as plain text in the page (keeps email-scraping bots away).
+  const decode = s => { try { return s ? atob(s) : ''; } catch (e) { return ''; } };
+  const TEAM = [
+    { id: 'shop',   name: 'Clicky Kingdom', email: decode('Y2xpY2t5a2luZ2RvbUBnbWFpbC5jb20=') },   // the shared Clicky Kingdom inbox
+    { id: 'daniel', name: 'Daniel', email: decode('ZGFuaWVsZ3JlaXptYW4yQGdtYWlsLmNvbQ==') }
+  ];
+  // feel: 'clicky' | 'tactile' | 'linear' (shown to customers and sets the click sound)
+  // sound (optional): 'crisp' = a tactile with a sharper click; color: the switch housing tint
+  // Only Keychron Mint for now. Add more entries here and each key slot gets a menu again.
+  // only: the layouts (ids from LAYOUTS) a switch is offered on. Leave it out to offer it on every clicker.
+  const KEYS = [
+    { id: 'mint', name: 'Keychron Mint', feel: 'tactile', sound: 'crisp', color: '#7fe3c2' },                          // Keychron K Pro Mint
+    { id: 'jade', name: 'Epomaker Creamy Jade', short: 'Creamy Jade', feel: 'linear', color: '#5fd3c8', only: ['1', '2'] }   // 1-key and 2-key clickers only
+  ];
+  const FILAMENT = [
+    { id: 'red',     name: 'Red',         hex: '#d8343a' },
+    { id: 'orange',  name: 'Orange',      hex: '#f07a22' },
+    { id: 'yellow',  name: 'Yellow',      hex: '#f5cf2a' },
+    { id: 'lgreen',  name: 'Light green', hex: '#8fd96a' },
+    { id: 'blue',    name: 'Sky blue',    hex: '#4aa3f0' },
+    { id: 'cyan',    name: 'Cyan',        hex: '#0086d6', owner: 'daniel' }, // Bambu Lab PLA Basic Cyan (10603)
+    { id: 'purple',  name: 'Purple',      hex: '#5a2fb8' },
+    { id: 'magenta', name: 'Magenta',     hex: '#d1338f' },
+    { id: 'brown',   name: 'Brown',       hex: '#7a4a2c' },
+    { id: 'black',   name: 'Black',       hex: '#1e1d24', rough: .32 },
+    { id: 'mblack',  name: 'Matte black', hex: '#2a2a2e', rough: .95, matte: true, owner: 'daniel' },
+    { id: 'white',   name: 'White',       hex: '#ecebf3', rough: .32 },
+    { id: 'mwhite',  name: 'Matte white', hex: '#e2e1e5', rough: .95, matte: true, owner: 'daniel' }
+  ];
+  // Keycaps-only orders: dollars per keycap, and the smallest number someone can order.
+  const CAP_PRICE = 0.5, MIN_CAPS = 2;
+  // Clicker layouts: keys in columns × rows, and the price in dollars (paid in person).
+  // Custom prints: price given when we reply.
+  const LAYOUTS = {
+    '1':   { cols: 1, rows: 1, price: 3, name: '1-key', label: '1 key' },
+    '2':   { cols: 2, rows: 1, price: 4, name: '2-key', label: '2 keys' },
+    '3':   { cols: 3, rows: 1, price: 5, name: '3-key', label: '3 keys' },
+    '4':   { cols: 4, rows: 1, price: 6, name: '4-key', label: '4 keys' },
+    '2x2': { cols: 2, rows: 2, price: 7, name: '2×2',   label: '2×2 grid' },
+    '3x3': { cols: 3, rows: 3, price: 15, name: '3×3',  label: '3×3 grid' }
+  };
+
+  // Colour presets: a case colour plus keycap colours that repeat across the keys (ids from FILAMENT).
+  const PRESETS = [
+    { name: 'Royal',    case: 'purple',  caps: ['yellow', 'white'] },
+    { name: 'Classic',  case: 'white',   caps: ['black'] },
+    { name: 'Midnight', case: 'mblack',  caps: ['mwhite', 'mblack'] },
+    { name: 'Honey',    case: 'brown',   caps: ['yellow'] },
+    { name: 'Ocean',    case: 'blue',    caps: ['white', 'cyan'] },
+    { name: 'Mint',     case: 'lgreen',  caps: ['white'] },
+    { name: 'Sunset',   case: 'magenta', caps: ['orange', 'yellow'] },
+    { name: 'Cherry',   case: 'white',   caps: ['red', 'white'] }
+  ];
+  // Biggest printer first. A file fits if it fits on at least one of these beds (mm, all three sides).
+  const PRINTERS = [{ name: 'Bambu Lab P1', bed: 256 }, { name: 'Bambu Lab A1 mini', bed: 180 }];
+  const BIG = PRINTERS[0];
+
+  /* Case measurements in mm. MX switches clip into a 14 mm square hole in a 1.5 mm plate, 19.05 mm apart. */
+  const P = { pitch: 19.05, border: 4, wall: 2, plateT: 1.5, shellH: 10, coverT: 2, lipH: 2.2, lipW: 1.4, fit: 0.2, hole: 14, r: 3.2 };
+  const COLORS = { blue: [214, 192], teal: [178, 168], green: [140, 128], orange: [26, 36], red: [354, 2], pink: [322, 316], purple: [266, 258] };
+
+  // mode: 'clicker' (base + switches + keycaps, 2–4 keys) or 'caps' (keycaps only, 1–8)
+  const MAX_CAPS = 10;
+  const state = {
+    mode: 'clicker', layout: '3', caps: 4, extra: 0, extraCap: 'white',
+    slots: Array.from({ length: MAX_CAPS }, (_, i) => ({ key: 'mint', cap: i % 2 ? 'white' : 'yellow' })),
+    caseFil: 'purple', sound: true, exploded: false, clicks: 0
+  };
+  const capsMode = () => state.mode === 'caps';
+  const capsTotal = c => `$${(c * CAP_PRICE).toFixed(2)}`;
+  const MAX_EXTRA = 10;
+  const money = v => (Number.isInteger(v) ? `$${v}` : `$${v.toFixed(2)}`);
+  const extraN = () => (capsMode() ? 0 : state.extra);
+  const clickerTotal = () => lay().price + extraN() * CAP_PRICE;
+  const lay = () => LAYOUTS[state.layout];
+  const keysN = () => lay().cols * lay().rows;
+  const count = () => (capsMode() ? state.caps : keysN());
+
+  const $ = id => document.getElementById(id);
+  const el = (tag, attrs = {}, ...kids) => {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === 'text') e.textContent = v; else if (k === 'style') e.style.cssText = v; else e.setAttribute(k, v);
+    }
+    for (const k of kids) if (k != null) e.append(k);
+    return e;
+  };
+  const byId = (list, id) => list.find(x => x.id === id) || list[0];
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const mm = v => v.toFixed(1);
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* storage blocked: fine */ } }
+  };
+
+  const dims = (L = lay()) => {
+    const W = L.cols * P.pitch + 2 * P.border, D = L.rows * P.pitch + 2 * P.border;
+    return { W, D, H: P.coverT + P.shellH };
+  };
+  // Keycaps-only view: rows of up to 5, centred.
+  const CAPS_PER_ROW = 5;
+  const capXY = (i, c) => {
+    const rows = Math.ceil(c / CAPS_PER_ROW), row = Math.floor(i / CAPS_PER_ROW), col = i % CAPS_PER_ROW;
+    const inRow = Math.min(CAPS_PER_ROW, c - row * CAPS_PER_ROW);
+    return [(col - (inRow - 1) / 2) * P.pitch, ((rows - 1) / 2 - row) * P.pitch];
+  };
+  // Where key i sits: numbered left to right, back row first.
+  const keyXY = (i, L = lay()) => {
+    const { W, D } = dims(L), col = i % L.cols, row = Math.floor(i / L.cols);
+    return [-W / 2 + P.border + P.pitch * (col + .5), D / 2 - P.border - P.pitch * (row + .5)];
+  };
+  const rrArea = (w, h, r) => w * h - (4 - Math.PI) * r * r;
+
+  /* ---------------- summary text + LCD ---------------- */
+  function designLines() {
+    const preset = currentPreset();
+    if (capsMode()) {
+      const c = state.caps, tally = {};
+      state.slots.slice(0, c).forEach(s => { tally[s.cap] = (tally[s.cap] || 0) + 1; });
+      const lines = [['Order', 'Keycaps only'], ['Keycaps', `${c} XDA-style, fit MX-style switches`]];
+      if (preset) lines.push(['Preset', preset.name]);
+      lines.push(['Colours', Object.entries(tally).map(([id, k]) => `${k} × ${byId(FILAMENT, id).name}`).join(', ')]);
+      lines.push(['Size', `${mm(CAP.base)} × ${mm(CAP.base)} × ${mm(CAP.H)} mm each`]);
+      lines.push(['Price', `${capsTotal(c)} (${Math.round(CAP_PRICE * 100)}¢ each), paid in person`]);
+      return lines;
+    }
+    const L = lay(), n = keysN(), { W, D, H } = dims();
+    const lines = [['Layout', L.rows > 1 ? `${L.cols}×${L.rows} grid (${n} keys)` : (n === 1 ? '1 key' : `${n} keys in a row`)]];
+    if (preset) lines.push(['Preset', preset.name]);
+    lines.push(['Case', byId(FILAMENT, state.caseFil).name]);
+    for (let i = 0; i < n; i++) {
+      const k = byId(KEYS, state.slots[i].key), c = byId(FILAMENT, state.slots[i].cap);
+      lines.push([`Key ${i + 1}`, `${k.name} (${k.feel}), ${c.name} keycap`]);
+    }
+    lines.push(['Size', `${mm(W)} × ${mm(D)} × ${mm(H)} mm`]);
+    const e = extraN();
+    if (e) lines.push(['Extras', `${e} extra XDA keycap${e > 1 ? 's' : ''}, ${byId(FILAMENT, state.extraCap).name}`]);
+    lines.push(['Price', e ? `${money(clickerTotal())} (clicker $${L.price} + extra keycaps ${capsTotal(e)}), paid in person` : `$${L.price}, paid in person`]);
+    return lines;
+  }
+
+  function updateText() {
+    updatePresets();
+    const L = lay(), n = keysN(), { W, D, H } = dims(), caps = capsMode(), c = state.caps, s = c > 1 ? 's' : '';
+    if (caps) {
+      $('lcd-sub').textContent = `${c} XDA keycap${s} · fit MX switches · ${capsTotal(c)}`;
+      $('dims').textContent = `${mm(CAP.base)} × ${mm(CAP.base)} × ${mm(CAP.H)} mm each`;
+      $('o-sum-n').textContent = 'Keycaps only';
+      $('o-sum-title').textContent = `${c} XDA keycap${s}`;
+    } else {
+      const keyNames = state.slots.slice(0, n).map(x => { const k = byId(KEYS, x.key); return k.short || k.name; });
+      const uniq = [...new Set(keyNames)];
+      $('lcd-sub').textContent = `${L.label} · ${(uniq.length === 1 ? uniq : keyNames).join(' · ')}${state.extra ? ` · +${state.extra} keycap${state.extra > 1 ? 's' : ''}` : ''} · ${money(clickerTotal())}`;
+      $('dims').textContent = `${mm(W)} × ${mm(D)} × ${mm(H)} mm`;
+      $('o-sum-n').textContent = L.name;
+      $('o-sum-title').textContent = `${L.name} clicker`;
+    }
+    document.querySelectorAll('[data-ind-n]').forEach(e => e.classList.toggle('on', !caps && e.dataset.indN === state.layout));
+    document.querySelectorAll('[data-n]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.n === state.layout)));
+    document.querySelectorAll('[data-caps]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.caps === c)));
+    document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode)));
+    $('grp-n').hidden = caps; $('grp-caps').hidden = !caps; $('grp-case').hidden = caps; $('btn-parts').hidden = caps;
+    $('stage-hint').textContent = caps ? 'Drag to turn them.' : 'Drag to turn it. Hold a key down, then let go.';
+    $('slots-title').textContent = caps ? 'Each keycap' : 'Each key';
+    $('slots-cols').textContent = caps ? 'Colour' : 'Switch · keycap';
+    $('build-note').textContent = caps ? `These keycaps fit any MX-style switch, like Keychron Mint, Cherry MX and Gateron. XDA profile, ${Math.round(CAP_PRICE * 100)}¢ each, ${MIN_CAPS} to ${MAX_CAPS} per order.` : 'Every clicker comes with Keychron Mint switches. 1-key and 2-key clickers can also have Epomaker Creamy Jade linear switches.';
+    $('order-title').textContent = caps ? 'Order these keycaps' : 'Order this clicker';
+    $('next-order').textContent = caps ? 'Order these keycaps' : 'Order this clicker';
+    $('next-price').textContent = caps ? capsTotal(c) : money(clickerTotal());
+    $('grp-extra').hidden = caps;
+    $('extra-n').textContent = String(state.extra);
+    $('extra-minus').disabled = state.extra <= 0; $('extra-plus').disabled = state.extra >= MAX_EXTRA;
+    $('extra-cap').disabled = !state.extra;
+    $('buy-title').textContent = caps ? 'Your keycaps' : 'Your clicker';
+    const tallyOf = (arr, name) => { const t = {}; arr.forEach(x => { t[x] = (t[x] || 0) + 1; }); return Object.entries(t).map(([id, k]) => `${k} ${name(id)}`).join(', '); };
+    const capList = state.slots.slice(0, count()).map(x => x.cap);
+    const capText = tallyOf(capList, id => byId(FILAMENT, id).name.toLowerCase());
+    const items = caps
+      ? [[`${c} XDA keycap${s}`, `: ${capText}`], ['Fit MX-style switches', ', like Keychron Mint'], [`${Math.round(CAP_PRICE * 100)}¢ each`, `, ${MIN_CAPS} to ${MAX_CAPS} per order`]]
+      : [[`${L.name} base`, ` in ${byId(FILAMENT, state.caseFil).name.toLowerCase()}`],
+         [`${n} switch${n > 1 ? 'es' : ''}`, `: ${tallyOf(state.slots.slice(0, n).map(x => x.key), id => byId(KEYS, id).name)}`],
+         [`${n} XDA keycap${n > 1 ? 's' : ''}`, `: ${capText}`],
+         ...(state.extra ? [[`${state.extra} extra keycap${state.extra > 1 ? 's' : ''}`, ` in ${byId(FILAMENT, state.extraCap).name.toLowerCase()}, ${capsTotal(state.extra)}`]] : []),
+         ['Printed for you', ' on our Bambu Lab P1']];
+    $('incl').replaceChildren(...items.map(([b, rest]) => el('li', {}, el('span', {}, el('b', { text: b }), rest))));
+    $('case-name').textContent = byId(FILAMENT, state.caseFil).name;
+    const ul = $('o-lines');
+    ul.replaceChildren(...designLines().map(([k, v], idx) => {
+      const right = el('span');
+      if (k === 'Case') right.append(el('i', { style: `--c:${byId(FILAMENT, state.caseFil).hex}` }));
+      right.append(v);
+      return el('li', {}, el('span', { text: k }), right);
+    }));
+  }
+
+  /* ---------------- controls ---------------- */
+  function renderSlots() {
+    const wrap = $('slots');
+    const rows = [];
+    if (capsMode()) {
+      for (let i = 0; i < state.caps; i++) {
+        const s = state.slots[i];
+        const capSel = el('select', { class: 'select', id: `slot-cap-${i}`, 'aria-label': `Keycap ${i + 1}: colour` });
+        FILAMENT.forEach(f => capSel.append(el('option', { value: f.id, text: f.name })));
+        capSel.value = s.cap;
+        const bar = el('i', { style: `--kc:${byId(FILAMENT, s.cap).hex}` });
+        capSel.addEventListener('change', () => { s.cap = capSel.value; bar.style.setProperty('--kc', byId(FILAMENT, s.cap).hex); refreshLooks(); });
+        rows.push(el('div', { class: 'slot caps' }, el('div', { class: 'k' }, el('span', { class: 'ind on', text: `Cap ${i + 1}` }), bar), capSel));
+      }
+      wrap.replaceChildren(...rows);
+      wrap.querySelectorAll('select').forEach(swatchSelect);
+      return;
+    }
+    for (let i = 0; i < keysN(); i++) {
+      const s = state.slots[i];
+      let keySel;
+      const avail = availableKeys();
+      if (avail.length > 1) {
+        keySel = el('select', { class: 'select', id: `slot-key-${i}`, 'aria-label': `Key ${i + 1}: which switch` });
+        avail.forEach(k => keySel.append(el('option', { value: k.id, text: k.short || k.name })));
+        keySel.value = s.key;
+      } else {
+        keySel = el('span', { class: 'fixed', title: `${avail[0].name} · ${avail[0].feel}`, text: avail[0].name });
+      }
+      const capSel = el('select', { class: 'select', id: `slot-cap-${i}`, 'aria-label': `Key ${i + 1}: keycap colour` });
+      FILAMENT.forEach(f => capSel.append(el('option', { value: f.id, text: f.name })));
+      capSel.value = s.cap;
+      const bar = el('i', { style: `--kc:${byId(KEYS, s.key).color}` });
+      keySel.addEventListener('change', () => { s.key = keySel.value; bar.style.setProperty('--kc', byId(KEYS, s.key).color); refreshLooks(); });
+      capSel.addEventListener('change', () => { s.cap = capSel.value; refreshLooks(); });
+      const press = el('button', { class: 'btn small ghost press', type: 'button', 'aria-label': `Press and hold key ${i + 1}`, text: 'Click' });
+      press.addEventListener('pointerdown', e => { if (e.button > 0) return; e.preventDefault(); keyDown(i); });
+      press.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); keyDown(i); } });
+      press.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); keyUp(i); } });
+      press.addEventListener('blur', () => keyUp(i));
+      rows.push(el('div', { class: 'slot' }, el('div', { class: 'k' }, el('span', { class: 'ind on', text: `Key ${i + 1}` }), bar), keySel, capSel, press));
+    }
+    wrap.replaceChildren(...rows);
+    wrap.querySelectorAll('select').forEach(swatchSelect);
+  }
+
+  function renderCaseFils() {
+    const wrap = $('case-fils');
+    wrap.replaceChildren(...FILAMENT.map(f => {
+      const b = el('button', { class: 'fil' + (f.clear ? ' clear' : '') + (f.matte ? ' matte' : ''), type: 'button', style: `--c:${f.hex}`, 'aria-label': f.name, title: f.name, 'aria-pressed': String(f.id === state.caseFil) });
+      b.addEventListener('click', () => {
+        state.caseFil = f.id;
+        wrap.querySelectorAll('.fil').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+        refreshLooks();
+      });
+      return b;
+    }));
+  }
+
+  function currentPreset() {
+    return PRESETS.find(p => (capsMode() || p.case === state.caseFil) && state.slots.slice(0, count()).every((s, i) => s.cap === p.caps[i % p.caps.length])) || null;
+  }
+  function renderPresets() {
+    const wrap = $('presets');
+    wrap.replaceChildren(...PRESETS.map(p => {
+      const ids = [p.case, ...p.caps.filter(c => c !== p.case)];
+      const names = p.caps.map(c => byId(FILAMENT, c).name.toLowerCase());
+      const b = el('button', { class: 'preset', type: 'button', 'aria-pressed': 'false', 'data-preset': p.name,
+        'aria-label': `${p.name}: ${byId(FILAMENT, p.case).name.toLowerCase()} case, ${[...new Set(names)].join(' and ')} keycaps`, title: p.name });
+      ids.forEach(id => { const f = byId(FILAMENT, id); b.append(el('i', { class: f.matte ? 'matte' : '', style: `--c:${f.hex}` })); });
+      b.addEventListener('click', () => applyPreset(p));
+      return b;
+    }));
+  }
+  function updatePresets() {
+    const cur = currentPreset();
+    document.querySelectorAll('.preset').forEach(b => b.setAttribute('aria-pressed', String(!!cur && b.dataset.preset === cur.name)));
+    const label = $('preset-name');
+    if (label) label.textContent = cur ? cur.name : 'Your own';
+  }
+  function applyPreset(p) {
+    if (!capsMode()) state.caseFil = p.case;   // keycaps-only orders have no case
+    state.slots.forEach((s, i) => { s.cap = p.caps[i % p.caps.length]; });
+    renderSlots(); renderCaseFils(); refreshLooks();
+  }
+
+  function availableKeys() { return KEYS.filter(k => !k.only || k.only.includes(state.layout)); }
+  function fixKeys() {   // a switch that isn't offered on this many keys goes back to the first one that is
+    const ok = availableKeys();
+    state.slots.forEach(s => { if (!ok.some(k => k.id === s.key)) s.key = ok[0].id; });
+  }
+
+  document.querySelectorAll('[data-n]').forEach(b => b.addEventListener('click', () => {
+    if (b.dataset.n === state.layout) return;
+    state.layout = b.dataset.n;
+    fixKeys(); renderSlots(); rebuild(); updateText();
+  }));
+  document.querySelectorAll('[data-caps]').forEach(b => b.addEventListener('click', () => {
+    const c = +b.dataset.caps;
+    if (c === state.caps) return;
+    state.caps = c;
+    renderSlots(); rebuild(); updateText();
+  }));
+  document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => {
+    if (b.dataset.mode === state.mode) return;
+    state.mode = b.dataset.mode;
+    renderSlots(); rebuild(); updateText();
+  }));
+
+  $('btn-sound').addEventListener('click', e => {
+    state.sound = !state.sound;
+    e.currentTarget.setAttribute('aria-pressed', String(state.sound));
+    e.currentTarget.textContent = state.sound ? 'Sound on' : 'Sound off';
+  });
+  $('btn-parts').addEventListener('click', e => {
+    state.exploded = !state.exploded;
+    e.currentTarget.setAttribute('aria-pressed', String(state.exploded));
+    e.currentTarget.textContent = state.exploded ? 'Put together' : 'Show parts';
+    fitMain();
+  });
+
+  /* ---------------- click sounds ---------------- */
+  let actx = null;
+  function audio() {
+    if (!actx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; try { actx = new AC(); } catch (e) { return null; } }
+    if (actx.state === 'suspended') actx.resume();
+    return actx;
+  }
+  function burst(ctx, t, dur, type, freq, q, gain) {
+    const len = Math.max(1, Math.ceil(ctx.sampleRate * dur));
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const f = ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+    const g = ctx.createGain(); g.gain.value = gain;
+    src.connect(f); f.connect(g); g.connect(ctx.destination); src.start(t);
+  }
+  function tone(ctx, t, freq, dur, gain) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(freq, t); o.frequency.exponentialRampToValueAtTime(freq * .6, t + dur);
+    g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + dur + .02);
+  }
+  /* Each switch sound has two halves: the press (going down) and the release (coming back up). */
+  function playPress(feel) {
+    if (!state.sound) return;
+    const ctx = audio(); if (!ctx) return;
+    const t = ctx.currentTime + .005;
+    if (feel === 'clicky') {
+      burst(ctx, t, .012, 'highpass', 3200, .7, .9); burst(ctx, t + .004, .02, 'bandpass', 5200, 3, .5);
+      burst(ctx, t + .035, .04, 'lowpass', 900, .8, .5); tone(ctx, t + .035, 190, .06, .18);
+    } else if (feel === 'crisp') {
+      burst(ctx, t, .01, 'highpass', 2800, .7, .6); burst(ctx, t + .003, .016, 'bandpass', 4200, 2.5, .35);
+      burst(ctx, t + .03, .045, 'lowpass', 800, .8, .6); tone(ctx, t + .03, 170, .065, .2);
+    } else if (feel === 'tactile') {
+      burst(ctx, t, .02, 'bandpass', 1800, 1.2, .45); burst(ctx, t + .03, .05, 'lowpass', 700, .8, .65); tone(ctx, t + .03, 160, .07, .22);
+    } else {
+      burst(ctx, t + .02, .055, 'lowpass', 600, .9, .8); tone(ctx, t + .02, 140, .08, .26);
+    }
+  }
+  function playRelease(feel) {
+    if (!state.sound) return;
+    const ctx = audio(); if (!ctx) return;
+    const t = ctx.currentTime + .005;
+    if (feel === 'clicky') burst(ctx, t, .012, 'highpass', 2600, .7, .35);
+    else if (feel === 'crisp') burst(ctx, t, .012, 'highpass', 2400, .7, .25);
+    else if (feel === 'tactile') burst(ctx, t, .03, 'lowpass', 800, .8, .25);
+    else burst(ctx, t, .035, 'lowpass', 700, .8, .25);
+  }
+
+  /* ---------------- 3D ---------------- */
+  const has3D = !!window.THREE;
+  const viewers = [];
+  let main = null, cv = null;
+
+  /* Rounded rectangle from explicit points, so no two outline points ever sit on top of each other
+     (duplicates leave sliver triangles that slicers flag). */
+  function rrPoints(w, h, r, seg = 8, ox = 0, oy = 0) {
+    r = Math.min(r, w / 2 - .01, h / 2 - .01);
+    const pts = [], q = v => Math.round(v * 1e5) / 1e5;
+    const corners = [[w / 2 - r, -h / 2 + r, -Math.PI / 2], [w / 2 - r, h / 2 - r, 0], [-w / 2 + r, h / 2 - r, Math.PI / 2], [-w / 2 + r, -h / 2 + r, Math.PI]];
+    for (const [cx, cy, a0] of corners) {
+      for (let i = 0; i <= seg; i++) {
+        const a = a0 + (Math.PI / 2) * (i / seg);
+        pts.push(new THREE.Vector2(q(ox + cx + r * Math.cos(a)), q(oy + cy + r * Math.sin(a))));
+      }
+    }
+    return pts;
+  }
+  function rrShape(w, h, r, Cls, ox = 0, oy = 0, seg = 8) {
+    return new (Cls || THREE.Shape)(rrPoints(w, h, r, seg, ox, oy));
+  }
+  /* Switch cut-out: 14 mm square with the usual 0.5 mm corner radius. */
+  function squarePath(cx, cy, size) { return rrShape(size, size, .5, THREE.Path, cx, cy, 3); }
+  function extrude(shape, depth, z0) {
+    const g = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 10 });
+    g.translate(0, 0, z0);
+    return g;
+  }
+  /* The base: one printed piece (floor, walls, switch plate), Z up, millimetres.
+     For the 3D view the three slabs meet exactly so no seams show; for printing they overlap by 0.5 mm
+     so the slicer fuses them into one solid. */
+  function buildParts(L = lay(), forPrint = false) {
+    const { W, D } = dims(L), ov = forPrint ? .5 : 0;
+    const zPlate = P.coverT + P.shellH - P.plateT;
+    const plate = rrShape(W, D, P.r);
+    for (let i = 0; i < L.cols * L.rows; i++) { const [x, y] = keyXY(i, L); plate.holes.push(squarePath(x, y, P.hole)); }
+    const plateG = extrude(plate, P.plateT, zPlate);
+    const ring = rrShape(W, D, P.r);
+    ring.holes.push(rrShape(W - 2 * P.wall, D - 2 * P.wall, Math.max(P.r - P.wall, .4), THREE.Path));
+    const ringG = extrude(ring, zPlate - P.coverT + 2 * ov, P.coverT - ov);
+    const floorG = extrude(rrShape(W, D, P.r), P.coverT, 0);
+    return { base: [floorG, ringG, plateG] };
+  }
+
+  /* Our own XDA-style keycap: tapered shell with a flat top and an MX cross stem flush with the bottom,
+     printed open side down. mm, Z up, bottom at z = 0. */
+  const CAP = { H: 9.1, base: 18, shoulder: 14.4, top: 12.6, wall: 1.3, topT: 1.5, stemOD: 5.5, crossL: 4.1, crossW: 1.3 };
+  function buildKeycap() {
+    const seg = 6, N = 4 * (seg + 1), H = CAP.H, cav = H - CAP.topT;
+    const sizeAt = z => CAP.base - (CAP.base - CAP.shoulder) * (z / (H - 1.2));
+    const outer = [[0, CAP.base, 2.2], [H - 1.2, CAP.shoulder, 2.0], [H - .55, 13.9, 1.8], [H - .15, 13.3, 1.6], [H, CAP.top, 1.3]];
+    const inner = [[0, CAP.base - 2 * CAP.wall, 1.0], [cav, sizeAt(cav) - 2 * CAP.wall, .8]];
+    const pos = [], idx = [];
+    const ring = ([z, s, r]) => { const start = pos.length / 3; for (const p of rrPoints(s, s, r, seg)) pos.push(p.x, p.y, z); return start; };
+    const O = outer.map(ring), I = inner.map(ring), last = O[O.length - 1];
+    for (let k = 0; k < O.length - 1; k++) for (let i = 0; i < N; i++) {           // outside walls
+      const j = (i + 1) % N; idx.push(O[k] + i, O[k] + j, O[k + 1] + j, O[k] + i, O[k + 1] + j, O[k + 1] + i);
+    }
+    const top = pos.length / 3; pos.push(0, 0, H);                                  // flat top
+    for (let i = 0; i < N; i++) idx.push(top, last + i, last + (i + 1) % N);
+    for (let i = 0; i < N; i++) {                                                     // bottom rim
+      const j = (i + 1) % N; idx.push(O[0] + j, O[0] + i, I[0] + i, O[0] + j, I[0] + i, I[0] + j);
+    }
+    for (let i = 0; i < N; i++) {                                                     // inside walls
+      const j = (i + 1) % N; idx.push(I[0] + i, I[1] + i, I[1] + j, I[0] + i, I[1] + j, I[0] + j);
+    }
+    const ceil = pos.length / 3; pos.push(0, 0, cav);                               // inside ceiling
+    for (let i = 0; i < N; i++) idx.push(ceil, I[1] + (i + 1) % N, I[1] + i);
+    const shell = new THREE.BufferGeometry();
+    shell.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    shell.setIndex(idx);
+    const circle = [];
+    for (let i = 0; i < 40; i++) { const a = (i / 40) * Math.PI * 2; circle.push(new THREE.Vector2(Math.round(CAP.stemOD / 2 * Math.cos(a) * 1e5) / 1e5, Math.round(CAP.stemOD / 2 * Math.sin(a) * 1e5) / 1e5)); }
+    const stemShape = new THREE.Shape(circle), a = CAP.crossL / 2, w = CAP.crossW / 2;
+    stemShape.holes.push(new THREE.Path([[w, a], [-w, a], [-w, w], [-a, w], [-a, -w], [-w, -w], [-w, -a], [w, -a], [w, -w], [a, -w], [a, w], [w, w]].map(([x, y]) => new THREE.Vector2(x, y))));
+    const stem = new THREE.ExtrudeGeometry(stemShape, { depth: cav + .5, bevelEnabled: false, curveSegments: 1 });
+    return [shell, stem];
+  }
+  function mergeGeoms(list) {
+    const flat = list.map(g => (g.index ? g.toNonIndexed() : g));
+    const total = flat.reduce((s, g) => s + g.attributes.position.array.length, 0), out = new Float32Array(total);
+    let o = 0; for (const g of flat) { out.set(g.attributes.position.array, o); o += g.attributes.position.array.length; }
+    const m = new THREE.BufferGeometry(); m.setAttribute('position', new THREE.BufferAttribute(out, 3));
+    return m;
+  }
+
+  function shadowTexture() {
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const g = c.getContext('2d'), grad = g.createRadialGradient(64, 64, 4, 64, 64, 64);
+    grad.addColorStop(0, 'rgba(0,0,0,.6)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grad; g.fillRect(0, 0, 128, 128);
+    return new THREE.CanvasTexture(c);
+  }
+
+  function makeViewer(canvas, opts = {}) {
+    const { onTap, onDown, onUp } = opts, shift = opts.viewShift || 1, zoom = opts.zoom || 1, sway = opts.sway ?? .35;
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.setClearColor(0x000000, 0);
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(30, 4 / 3, 1, 4000);
+    const hemi = new THREE.HemisphereLight(0xeef0ff, 0x241640, .85);
+    const sun = new THREE.DirectionalLight(0xffffff, 1.15); sun.position.set(-70, 160, 110);
+    const rim = new THREE.DirectionalLight(0x9d8bff, 1.1); rim.position.set(110, 60, -140);
+    const fill = new THREE.DirectionalLight(0xffffff, .3); fill.position.set(90, 20, 120);
+    scene.add(hemi, sun, rim, fill);
+    const model = new THREE.Group(); model.rotation.x = -Math.PI / 2; scene.add(model);
+    const v = { renderer, scene, camera, model, rim, canvas, visible: true, yaw: -.55, baseYaw: -.55, pitch: .55, dist: 220, targetDist: 220, cy: 10, targetCy: 10, radius: 40, idle: true, onFrame: null, t0: performance.now() };
+    v.fit = (radius, cy) => {
+      v.radius = radius; v.targetCy = cy;
+      const vf = camera.fov * Math.PI / 180, hf = 2 * Math.atan(Math.tan(vf / 2) * camera.aspect);
+      v.targetDist = radius / Math.sin(Math.min(vf, hf) / 2) * 1.02 * (typeof zoom === 'function' ? zoom(camera.aspect) : zoom);
+    };
+    function resize() {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      if (!w || !h) return;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / (h * shift);
+      if (shift !== 1) camera.setViewOffset(w, h * shift, 0, 0, w, h);   // render the top of a taller view, so the model sits low
+      camera.updateProjectionMatrix();
+      v.fit(v.radius, v.targetCy);
+    }
+    new ResizeObserver(resize).observe(canvas); resize();
+    new IntersectionObserver(es => { v.visible = es[0].isIntersecting; }).observe(canvas);
+    const ray = new THREE.Raycaster();
+    v.pick = (x, y, objs) => { ray.setFromCamera({ x, y }, camera); const hit = ray.intersectObjects(objs, false)[0]; return hit ? hit.object : null; };
+
+    let down = null;
+    const ndc = e => { const r = canvas.getBoundingClientRect(); return [((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1]; };
+    canvas.addEventListener('pointerdown', e => {
+      const held = onDown ? onDown(...ndc(e)) : false;   // pressing a key holds it instead of turning the view
+      down = { x: e.clientX, y: e.clientY, yaw: v.yaw, pitch: v.pitch, moved: false, type: e.pointerType, held };
+      if (canvas.setPointerCapture) { try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ } }
+    });
+    canvas.addEventListener('pointermove', e => {
+      if (!down) return;
+      const dx = e.clientX - down.x, dy = e.clientY - down.y;
+      if (down.held) return;
+      if (!down.moved && Math.hypot(dx, dy) > 6) { down.moved = true; v.idle = false; canvas.classList.add('dragging'); }
+      if (down.moved) {
+        v.yaw = down.yaw - dx * .01;
+        if (down.type !== 'touch') v.pitch = clamp(down.pitch + dy * .006, .1, 1.35);
+      }
+    });
+    canvas.addEventListener('pointerup', e => {
+      if (!down) return;
+      const was = down; down = null; canvas.classList.remove('dragging');
+      if (was.held) { if (onUp) onUp(); return; }
+      if (!was.moved && onTap) {
+        const r = canvas.getBoundingClientRect();
+        onTap(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+      }
+    });
+    canvas.addEventListener('pointercancel', () => { if (down && down.held && onUp) onUp(); down = null; canvas.classList.remove('dragging'); });
+
+    v.frame = t => {
+      if (v.idle && !reduced) v.yaw = v.baseYaw + Math.sin((t - v.t0) / 2600) * sway;
+      v.dist += (v.targetDist - v.dist) * .12;
+      v.cy += (v.targetCy - v.cy) * .12;
+      camera.position.set(Math.sin(v.yaw) * Math.cos(v.pitch) * v.dist, v.cy + Math.sin(v.pitch) * v.dist, Math.cos(v.yaw) * Math.cos(v.pitch) * v.dist);
+      camera.lookAt(0, v.cy, 0);
+      if (v.onFrame) v.onFrame(t);
+      renderer.render(scene, camera);
+    };
+    viewers.push(v);
+    return v;
+  }
+
+  function linearColor(hex) { return new THREE.Color(hex).convertSRGBToLinear(); }
+  function applyFil(mat, f) {
+    mat.color.copy(linearColor(f.hex));
+    mat.roughness = f.rough != null ? f.rough : .55;
+    mat.metalness = f.metal || 0;
+    mat.transparent = !!f.clear;
+    mat.opacity = f.clear ? .5 : 1;
+    mat.depthWrite = !f.clear;
+    mat.needsUpdate = true;
+  }
+
+  // main scene objects
+  let parts = null;
+  const caseGroup = has3D ? new THREE.Group() : null;
+  const coverGroup = has3D ? new THREE.Group() : null;
+  const keysGroup = has3D ? new THREE.Group() : null;
+  const caseMat = has3D ? new THREE.MeshStandardMaterial({ roughness: .55 }) : null;
+  const capMats = [], houseMats = [];
+  let keyMeshes = [];
+  let capGeo = null, houseGeo = null, shadow = null, explode = 0;
+
+  function fitMain() {
+    if (!main) return;
+    if (capsMode()) {
+      const w = Math.min(state.caps, CAPS_PER_ROW) * P.pitch, d = Math.ceil(state.caps / CAPS_PER_ROW) * P.pitch;
+      main.fit(Math.sqrt((w / 2) ** 2 + (d / 2) ** 2 + (CAP.H / 2) ** 2) * 1.05, CAP.H / 2);
+      return;
+    }
+    const { W, D, H } = dims();
+    const top = state.exploded ? H + 32 : H + 13;
+    const bottom = 0;
+    const h = top - bottom;
+    main.fit(Math.sqrt((W / 2) ** 2 + (D / 2) ** 2 + (h / 2) ** 2) * .98, bottom + h / 2);
+  }
+
+  function rebuild() {
+    if (!main) return;
+    if (parts) parts.base.forEach(g => g.dispose());
+    caseGroup.clear(); coverGroup.clear(); keysGroup.clear();
+    parts = buildParts();
+    parts.base.forEach(g => caseGroup.add(new THREE.Mesh(g, caseMat)));
+    const caps = capsMode(), c = count();
+    caseGroup.visible = !caps;
+    const plateTop = P.coverT + P.shellH;
+    keyMeshes = [];
+    for (let i = 0; i < c; i++) {
+      const cap = new THREE.Mesh(capGeo, capMats[i]);
+      const [x, y] = caps ? capXY(i, c) : keyXY(i);
+      cap.position.set(x, y, caps ? 0 : plateTop + 3.6);
+      cap.userData.index = i;
+      let house = null;
+      if (!caps) { house = new THREE.Mesh(houseGeo, houseMats[i]); house.position.set(x, y, plateTop); keysGroup.add(house); }
+      keysGroup.add(cap);
+      keyMeshes.push({ house, cap, press: 0, target: 0, x });
+    }
+    if (caps) shadow.scale.set(Math.min(c, CAPS_PER_ROW) * P.pitch * 1.4 + 10, Math.ceil(c / CAPS_PER_ROW) * P.pitch * 1.4 + 10, 1);
+    else { const { W, D } = dims(); shadow.scale.set(W * 1.7, D * 1.7 + 20, 1); }
+    fitMain();
+    refreshLooks();
+  }
+
+  function refreshLooks() {
+    updateText();
+    if (!main) return;
+    applyFil(caseMat, byId(FILAMENT, state.caseFil));
+    for (let i = 0; i < MAX_CAPS; i++) {
+      const s = state.slots[i];
+      applyFil(capMats[i], byId(FILAMENT, s.cap));
+      houseMats[i].color.copy(linearColor(byId(KEYS, s.key).color));
+    }
+  }
+
+  function initMain() {
+    main = makeViewer($('stage-canvas'), {
+      onDown(x, y) {
+        if (capsMode()) return false;
+        const hit = main.pick(x, y, keyMeshes.map(k => k.cap));
+        if (!hit) return false;
+        keyDown(hit.userData.index);
+        return true;
+      },
+      onUp() { keyUpAll(); }
+    });
+    const capParts = buildKeycap();
+    capGeo = mergeGeoms(capParts); capGeo.computeVertexNormals();
+    capParts.forEach(g => g.dispose());
+    // Switch top housing, tapered like a real MX switch (15.6 mm at the plate, 11.2 mm on top) so it stays inside the keycap.
+    houseGeo = new THREE.CylinderGeometry(5.6 * Math.SQRT2, 7.8 * Math.SQRT2, 5.6, 4, 1).toNonIndexed();
+    houseGeo.rotateX(Math.PI / 2); houseGeo.rotateZ(Math.PI / 4); houseGeo.translate(0, 0, 2.8);
+    houseGeo.computeVertexNormals();
+    for (let i = 0; i < MAX_CAPS; i++) {
+      capMats.push(new THREE.MeshStandardMaterial({ roughness: .5 }));
+      houseMats.push(new THREE.MeshStandardMaterial({ roughness: .25, transparent: true, opacity: .78 }));
+    }
+    shadow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: shadowTexture(), transparent: true, depthWrite: false }));
+    shadow.position.z = -.05;
+    main.model.add(shadow, coverGroup, caseGroup, keysGroup);
+    main.onFrame = () => {
+      explode += ((state.exploded ? 1 : 0) - explode) * .12;
+      shadow.position.z = -.05;
+      const plateTop = P.coverT + P.shellH;
+      for (const k of keyMeshes) {
+        k.press += (k.target - k.press) * .6;
+        if (!k.house) { k.cap.position.z = 0; continue; }   // keycaps only: sitting on the table
+        k.cap.position.z = plateTop + 3.6 - k.press * 3.2 + 18 * explode;
+        k.house.position.z = plateTop + 7 * explode;
+      }
+    };
+    rebuild();
+  }
+
+  /* Hero: our own 3-key clicker turning slowly behind the headline. */
+  let hv = null, heroPaused = reduced;
+  function initHero() {
+    const canvas = $('hero-canvas');
+    if (!canvas) return;
+    hv = makeViewer(canvas, { viewShift: 1.9, zoom: a => (a < .6 ? 1.4 : 2.1), sway: 0 });   // small and low, peeking up below the buttons
+    hv.pitch = .5; hv.baseYaw = -.55;
+    const L = LAYOUTS['3'], plateTop = P.coverT + P.shellH;
+    const caseM = new THREE.MeshStandardMaterial(); applyFil(caseM, byId(FILAMENT, 'black'));
+    buildParts(L).base.forEach(g => hv.model.add(new THREE.Mesh(g, caseM)));
+    const houseM = new THREE.MeshStandardMaterial({ roughness: .25, transparent: true, opacity: .78 });
+    houseM.color.copy(linearColor(byId(KEYS, 'mint').color));
+    ['yellow', 'white', 'yellow'].forEach((col, i) => {
+      const [x, y] = keyXY(i, L);
+      const m = new THREE.MeshStandardMaterial(); applyFil(m, byId(FILAMENT, col));
+      const cap = new THREE.Mesh(capGeo, m); cap.position.set(x, y, plateTop + 3.6);
+      const house = new THREE.Mesh(houseGeo, houseM); house.position.set(x, y, plateTop);
+      hv.model.add(house, cap);
+    });
+    const { W, D, H } = dims(L), top = H + 13;
+    hv.fit(Math.sqrt((W / 2) ** 2 + (D / 2) ** 2 + (top / 2) ** 2), top / 2);
+    hv.onFrame = () => { if (!heroPaused) hv.baseYaw += .0035; };
+  }
+  function setHeroPaused(p) {
+    heroPaused = p;
+    const b = $('hero-pause');
+    b.setAttribute('aria-pressed', String(p));
+    b.setAttribute('aria-label', p ? 'Play the animation' : 'Pause the animation');
+    b.innerHTML = p ? '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11a.6.6 0 0 0 .9.5l9-5.5a.6.6 0 0 0 0-1l-9-5.5a.6.6 0 0 0-.9.5z"/></svg>'
+                    : '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="2" width="3.5" height="12" rx="1"/><rect x="9.5" y="2" width="3.5" height="12" rx="1"/></svg>';
+  }
+  $('hero-pause').addEventListener('click', () => setHeroPaused(!heroPaused));
+
+  let clickFlash = 0;
+  const heldKeys = new Set(), downAt = {};
+  const MIN_PRESS_MS = 110;   // even a very quick tap shows the key travelling all the way down
+  function keyDown(i) {
+    if (heldKeys.has(i)) return;
+    heldKeys.add(i); downAt[i] = performance.now();
+    const k = byId(KEYS, state.slots[i].key);
+    playPress(k.sound || k.feel);
+    const km = keyMeshes[i];
+    if (km) km.target = 1;
+    state.clicks += 1;
+    $('clicks').textContent = String(state.clicks);
+    const ind = $('click-ind');
+    ind.textContent = k.feel[0].toUpperCase() + k.feel.slice(1); ind.classList.add('warm');
+    clearTimeout(clickFlash);
+    clickFlash = setTimeout(() => { ind.textContent = 'Clicks'; ind.classList.remove('warm'); }, 500);
+  }
+  function keyUp(i) {
+    if (!heldKeys.has(i)) return;
+    const wait = Math.max(0, MIN_PRESS_MS - (performance.now() - (downAt[i] || 0)));
+    if (wait) { setTimeout(() => keyUp(i), wait); return; }
+    heldKeys.delete(i);
+    const k = byId(KEYS, state.slots[i] ? state.slots[i].key : 'mint');
+    playRelease(k.sound || k.feel);
+    const km = keyMeshes[i];
+    if (km) km.target = 0;
+  }
+  function keyUpAll() { [...heldKeys].forEach(keyUp); }
+  // letting go anywhere on the page releases the key (works the same in every browser)
+  window.addEventListener('pointerup', keyUpAll);
+  window.addEventListener('pointercancel', keyUpAll);
+  window.addEventListener('blur', keyUpAll);
+
+  function loop(t) {
+    requestAnimationFrame(loop);
+    for (const v of viewers) if (v.visible) v.frame(t);
+  }
+
+  /* ---------------- order + custom emails ---------------- */
+  const orderCode = () => 'CK-' + String(1000 + (crypto.getRandomValues(new Uint16Array(1))[0] % 9000));
+
+  function renderTeam(prefix) {
+    const wrap = $(`${prefix}-team`);
+    wrap.replaceChildren(...TEAM.map((p, i) => {
+      const input = el('input', { type: 'radio', name: `${prefix}-to`, id: `${prefix}-to-${p.id}`, value: p.id });
+      if (i === 0) input.checked = true;
+      return el('label', { class: 'opt' }, input, el('span', { text: p.name }));
+    }));
+  }
+  // A colour with an `owner` (in FILAMENT) sends the whole order to that person. Otherwise orders take turns,
+  // and only people with an email take orders; with nobody's email added yet, it still picks so the page works.
+  const assignee = (code, colours = []) => {
+    const owner = colours.map(id => byId(FILAMENT, id).owner).find(Boolean);
+    const fixed = owner && TEAM.find(p => p.id === owner && p.email.trim());
+    if (fixed) return fixed;
+    const shop = TEAM.find(p => p.id === 'shop' && p.email.trim());   // every other order goes to the shared inbox
+    if (shop) return shop;
+    const pool = TEAM.filter(p => p.email.trim()).length ? TEAM.filter(p => p.email.trim()) : TEAM;
+    return pool[parseInt(code.slice(3), 10) % pool.length];
+  };
+  function check(prefix, extra) {
+    const missing = [];
+    for (const [id, what] of [[`${prefix}-name`, 'your name'], [`${prefix}-class`, 'your class']]) {
+      const i = $(id), bad = !i.value.trim();
+      i.setAttribute('aria-invalid', String(bad));
+      if (bad) missing.push(what);
+    }
+    const err = $(`${prefix}-err`);
+    const msgs = [];
+    if (extra) msgs.push(extra);
+    const list = missing.length > 1 ? `${missing.slice(0, -1).join(', ')} and ${missing[missing.length - 1]}` : missing[0];
+    if (missing.length) msgs.push(`Add ${list} so we know who the order is for.`);
+    const dc = $(`${prefix}-discord`), em = $(`${prefix}-email`);
+    const emBad = !!em.value.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em.value.trim());
+    const none = !dc.value.trim() && !em.value.trim();
+    dc.setAttribute('aria-invalid', String(none)); em.setAttribute('aria-invalid', String(none || emBad));
+    if (none) msgs.push('Add your Discord username or your email so we can reach you.');
+    else if (emBad) msgs.push('Check your email address.');
+    err.hidden = !msgs.length; err.textContent = msgs.join(' ');
+    return !msgs.length;
+  }
+  function personLines(prefix) {
+    const v = id => $(`${prefix}-${id}`).value.trim();
+    const out = [`Name: ${v('name')}`, `Class: ${v('class')}`];
+    if (v('discord')) out.push(`Discord: ${v('discord').replace(/^@/, '')}`);
+    if (v('email')) out.push(`Email: ${v('email')}`);
+    if (v('where')) out.push(`Where to meet: ${v('where')}`);
+    if (v('notes')) out.push(`Notes: ${v('notes')}`);
+    out.push('Payment: in person when I get it');
+    return out;
+  }
+  function selectText(node) {
+    const r = document.createRange(); r.selectNodeContents(node);
+    const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+  function showSend(prefix, { person, code, subject, body, steps, sent = false }) {
+    const p = $(`${prefix}-send`), f = k => p.querySelector(`[data-f="${k}"]`);
+    p.querySelectorAll('.kv:not([data-f="torow"]), .msg, .mail-btns, [data-f="note"]').forEach(x => { x.hidden = sent; });
+    p.classList.toggle('sent', sent);
+    const email = (person.email || '').trim();
+    p._data = { to: email, subject, body };
+    f('torow').hidden = true;                      // the address stays hidden until someone asks for it
+    p.querySelector('[data-show]').hidden = !email;
+    f('code').textContent = code;
+    f('headline').textContent = sent ? 'Order sent!' : 'Email ready';
+    const to = f('to');
+    to.textContent = email || 'Our email address isn’t added yet';
+    to.classList.toggle('missing', !email);
+    p.querySelector('[data-copy="to"]').disabled = !email;
+    f('subject').textContent = subject;
+    f('body').textContent = body;
+    f('steps').replaceChildren(...steps.map(([text, attn]) => el('li', { class: attn ? 'attn' : '', text })));
+    const enc = encodeURIComponent, crlf = body.replace(/\n/g, '\r\n');
+    f('gmail').href = `https://mail.google.com/mail/?view=cm&fs=1&to=${enc(email)}&su=${enc(subject)}&body=${enc(body)}`;
+    f('outlook').href = `https://outlook.live.com/mail/0/deeplink/compose?to=${enc(email)}&subject=${enc(subject)}&body=${enc(body)}`;
+    f('mailto').href = `mailto:${email}?subject=${enc(subject)}&body=${enc(crlf)}`;
+    p.hidden = false;
+    p.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'nearest' });
+  }
+  function wireCopy(prefix) {
+    const p = $(`${prefix}-send`);
+    p.addEventListener('click', e => {
+      const show = e.target.closest('[data-show]');
+      if (show) { p.querySelector(`[data-f="${show.dataset.show}"]`).hidden = false; return; }
+      const b = e.target.closest('[data-copy]');
+      if (!b || !p._data) return;
+      const key = b.dataset.copy, text = p._data[key], node = p.querySelector(`[data-f="${key}"]`);
+      const done = msg => { const old = 'Copy'; b.textContent = msg; setTimeout(() => { b.textContent = old; }, 1600); };
+      const fallback = () => { selectText(node); done('Selected'); };
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => done('Copied'), fallback);
+        else fallback();
+      } catch (err) { fallback(); }
+    });
+  }
+
+  /* Send the order straight to our inbox through FormSubmit (formsubmit.co). Each inbox has to be activated once:
+     the first order sent to it triggers an "Activate form" email; click the button in that email. If sending fails
+     (no internet, not activated yet, or the page is opened somewhere that blocks it), the manual email options show instead. */
+  async function sendOrder(prefix, { person, code, subject, body, file, manualSteps, sentSteps }) {
+    const email = (person.email || '').trim();
+    const btn = $(`${prefix}-form`).querySelector('button[type=submit]'), label = btn.textContent;
+    const fallback = () => showSend(prefix, { person, code, subject, body, steps: manualSteps });
+    if (!email) { fallback(); return; }
+    btn.disabled = true; btn.textContent = 'Sending your order…';
+    const fd = new FormData();
+    fd.append('_subject', subject);
+    fd.append('_template', 'box');
+    fd.append('_captcha', 'false');
+    const reply = $(`${prefix}-email`).value.trim();
+    if (reply) fd.append('_replyto', reply);
+    fd.append('Order', body);
+    if (file && file.size <= 10 * 1024 * 1024) fd.append('attachment', file, file.name);
+    try {
+      const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 20000);
+      const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(email)}`, { method: 'POST', body: fd, headers: { Accept: 'application/json' }, signal: ctl.signal });
+      clearTimeout(timer);
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && String(json.success) === 'true') {
+        showSend(prefix, { person, code, subject, body, steps: sentSteps, sent: true });
+      } else fallback();
+    } catch (err) { fallback(); }
+    btn.disabled = false; btn.textContent = label;
+  }
+
+  $('o-form').addEventListener('submit', e => {
+    e.preventDefault();
+    if (!check('o')) return;
+    const colours = capsMode() ? state.slots.slice(0, state.caps).map(s => s.cap) : [state.caseFil, ...state.slots.slice(0, count()).map(s => s.cap), ...(state.extra ? [state.extraCap] : [])];
+    const code = orderCode(), person = assignee(code, colours);
+    const subject = `Clicky Kingdom order ${code}: ${capsMode() ? `${state.caps} XDA keycap${state.caps > 1 ? 's' : ''}` : `${lay().name.toLowerCase()} clicker${state.extra ? ` + ${state.extra} extra keycap${state.extra > 1 ? 's' : ''}` : ''}`}`;
+    const body = [`Clicky Kingdom order ${code}`, '', ...designLines().map(([k, v]) => `${k}: ${v}`), '', ...personLines('o')].join('\n');
+    sendOrder('o', { person, code, subject, body,
+      sentSteps: [[`Your order number is ${code}. Keep it handy.`], ['We’ll message you on Discord or email when it’s printed.'], ['You pay in person when you get it.']],
+      manualSteps: [['Couldn’t send it automatically, so open the email with Gmail or Outlook below. It comes filled in.'], ['Check the message, then press send.'], ['We get back to you. You pay in person when you get it.']] });
+  });
+
+  /* ---------------- custom STL ---------------- */
+  const custom = { name: '', geo: null, size: null, tris: 0, fits: false };
+  const cMat = has3D ? new THREE.MeshStandardMaterial({ roughness: .55 }) : null;
+  let cMesh = null, cShadow = null;
+
+  /* Paint a filament menu: each option in its own colour, and a swatch for the chosen one. */
+  const textOn = hex => { const n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#141414' : '#ffffff'; };
+  function swatchSelect(sel) {
+    let any = false;
+    for (const o of sel.options) {
+      const f = FILAMENT.find(x => x.id === o.value);
+      if (!f) continue;
+      any = true; o.style.backgroundColor = f.hex; o.style.color = textOn(f.hex);
+    }
+    if (!any) return;
+    const paint = () => { const f = FILAMENT.find(x => x.id === sel.value); if (f) sel.style.setProperty('--sw', f.hex); };
+    sel.classList.add('swatched'); paint();
+    if (!sel.dataset.sw) { sel.dataset.sw = '1'; sel.addEventListener('change', paint); }
+  }
+  function renderColourSelect() {
+    const s = $('c-colour');
+    FILAMENT.forEach(f => s.append(el('option', { value: f.id, text: f.name })));
+    s.value = 'purple';
+    swatchSelect(s);
+    s.addEventListener('change', () => { if (cMat) applyFil(cMat, byId(FILAMENT, s.value)); });
+  }
+
+  function parseSTL(buf) {
+    const dv = new DataView(buf);
+    let positions = null;
+    if (buf.byteLength >= 84) {
+      const n = dv.getUint32(80, true);
+      if (84 + n * 50 === buf.byteLength && n > 0) {
+        positions = new Float32Array(n * 9);
+        for (let t = 0; t < n; t++) {
+          const o = 84 + t * 50 + 12;
+          for (let j = 0; j < 9; j++) positions[t * 9 + j] = dv.getFloat32(o + j * 4, true);
+        }
+      }
+    }
+    if (!positions) {
+      const text = new TextDecoder().decode(buf);
+      const re = /vertex\s+([-+\d.eE]+)\s+([-+\d.eE]+)\s+([-+\d.eE]+)/g;
+      const out = []; let m;
+      while ((m = re.exec(text))) out.push(+m[1], +m[2], +m[3]);
+      if (out.length < 9) throw new Error('no triangles');
+      positions = new Float32Array(out.length - (out.length % 9));
+      positions.set(out.slice(0, positions.length));
+    }
+    return positions;
+  }
+
+  function loadCustom(name, buf) {
+    const err = $('c-file-err');
+    err.hidden = true;
+    let pos;
+    try { pos = parseSTL(buf); } catch (e) {
+      err.hidden = false; err.textContent = 'That file doesn’t look like an STL. Export it as .stl from your 3D program and try again.';
+      return;
+    }
+    const box = new THREE.Box3();
+    let minx = Infinity, miny = Infinity, minz = Infinity, maxx = -Infinity, maxy = -Infinity, maxz = -Infinity;
+    for (let i = 0; i < pos.length; i += 3) {
+      const x = pos[i], y = pos[i + 1], z = pos[i + 2];
+      if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y; if (z < minz) minz = z; if (z > maxz) maxz = z;
+    }
+    const size = { x: maxx - minx, y: maxy - miny, z: maxz - minz };
+    custom.name = name; custom.size = size; custom.tris = pos.length / 9;
+    custom.fitsOn = PRINTERS.filter(p => size.x <= p.bed && size.y <= p.bed && size.z <= p.bed);
+    custom.fits = custom.fitsOn.length > 0;
+    const tiny = Math.max(size.x, size.y, size.z) < 5;
+
+    $('c-drop').classList.add('has');
+    $('c-drop-title').textContent = name;
+    $('c-drop-sub').textContent = 'Choose a different file';
+    $('c-size').textContent = `${mm(size.x)} × ${mm(size.y)} × ${mm(size.z)} mm`;
+    const fit = $('c-fit');
+    fit.textContent = tiny ? 'Very small. Is it in millimetres?'
+      : custom.fitsOn.length === PRINTERS.length ? 'Fits all our printers'
+      : custom.fits ? `Fits our P1 (${BIG.bed} mm bed)` : `Too big for our ${BIG.bed} mm bed`;
+    fit.className = 'ind ' + (custom.fits && !tiny ? 'on' : 'warm');
+    $('c-tris').textContent = `${custom.tris.toLocaleString()} triangles`;
+
+    if (!has3D) return;
+    $('c-stage').hidden = false;
+    if (!cv) {
+      cv = makeViewer($('c-canvas'));
+      cShadow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: shadowTexture(), transparent: true, depthWrite: false }));
+      cv.model.add(cShadow);
+      if (main) cv.rim.color.copy(main.rim.color);
+      applyFil(cMat, byId(FILAMENT, $('c-colour').value));
+    }
+    if (cMesh) { cv.model.remove(cMesh); cMesh.geometry.dispose(); }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.translate(-(minx + maxx) / 2, -(miny + maxy) / 2, -minz);
+    g.computeVertexNormals();
+    cMesh = new THREE.Mesh(g, cMat);
+    cv.model.add(cMesh);
+    cShadow.scale.set(size.x * 1.6 + 1, size.y * 1.6 + 1, 1);
+    cShadow.position.z = -.05;
+    cv.fit(Math.sqrt((size.x / 2) ** 2 + (size.y / 2) ** 2 + (size.z / 2) ** 2) * 1.02, size.z / 2);
+  }
+
+  function readFile(file) {
+    if (!file) return;
+    const err = $('c-file-err');
+    if (!/\.stl$/i.test(file.name)) { err.hidden = false; err.textContent = 'Pick a file that ends in .stl.'; return; }
+    if (file.size > 80 * 1024 * 1024) { err.hidden = false; err.textContent = 'That file is over 80 MB. Email it to us and we’ll take a look.'; }
+    const r = new FileReader();
+    r.onload = () => { custom.file = file; loadCustom(file.name, r.result); };
+    r.onerror = () => { err.hidden = false; err.textContent = 'Couldn’t read that file. Try choosing it again.'; };
+    r.readAsArrayBuffer(file);
+  }
+  $('c-file').addEventListener('change', e => readFile(e.target.files[0]));
+  const drop = $('c-drop');
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+  drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); readFile(e.dataTransfer.files[0]); });
+  $('c-form').addEventListener('submit', e => {
+    e.preventDefault();
+    if (!check('c', custom.name ? '' : 'Choose your STL file first.')) return;
+    const code = orderCode(), person = assignee(code, [$('c-colour').value]), s = custom.size;
+    const subject = `Clicky Kingdom custom print ${code}: ${custom.name}`;
+    const body = [
+      `Clicky Kingdom custom print ${code}`, '',
+      `File: ${custom.name} (attached)`,
+      `Size: ${mm(s.x)} × ${mm(s.y)} × ${mm(s.z)} mm`,
+      `Fits our printers: ${custom.fits ? 'yes, ' + custom.fitsOn.map(p => p.name).join(' and ') : 'no, it may need to be scaled down or split'}`,
+      `Colour: ${byId(FILAMENT, $('c-colour').value).name}`,
+      'Price: confirmed when Clicky Kingdom replies', '',
+      ...personLines('c')
+    ].join('\n');
+    const big = custom.file && custom.file.size > 10 * 1024 * 1024;
+    sendOrder('c', { person, code, subject: big ? subject + ' (file too big to attach)' : subject,
+      body: big ? body.replace('(attached)', '(too big to attach, please send it another way)') : body, file: custom.file,
+      sentSteps: [[`Your order number is ${code}.`], big ? ['Your file is over 10 MB, so it wasn’t attached. We’ll message you about how to send it.', true] : ['Your STL file was sent with it.'], ['We’ll message you with the price. You pay in person when you get your print.']],
+      manualSteps: [['Couldn’t send it automatically, so open the email with Gmail or Outlook below. It comes filled in.'], [`Attach ${custom.name} to the email. Your email app can’t add it for you.`, true], ['Press send. You pay in person when you get your print.']] });
+  });
+
+  /* ---------------- glass colour ---------------- */
+  function setHue(name) {
+    const [h, lh] = COLORS[name] || COLORS.purple;
+    const root = document.documentElement;
+    root.style.setProperty('--h', h); root.style.setProperty('--lh', lh);
+    document.querySelectorAll('.sw').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.c === name)));
+    for (const v of viewers) v.rim.color.setHSL(lh / 360, 1, .72);
+    store.set('ck-glass', name);
+  }
+  function renderSwatches() {
+    const wrap = $('colors');
+    for (const [name, [h]] of Object.entries(COLORS)) {
+      const b = el('button', { class: 'sw', type: 'button', 'data-c': name, style: `--sh:${h}`, 'aria-label': name[0].toUpperCase() + name.slice(1), 'aria-pressed': 'false' });
+      b.addEventListener('click', () => setHue(name));
+      wrap.append(b);
+    }
+  }
+
+  /* ---------------- start ---------------- */
+  document.querySelectorAll('[data-n]').forEach(b => {
+    const L = LAYOUTS[b.dataset.n];
+    b.append(el('span', { class: 'chip-price', text: `$${L.price}` }));
+    b.setAttribute('aria-label', `${L.label.toLowerCase()}, $${L.price}`);
+  });
+  document.querySelectorAll('[data-caps]').forEach(b => {
+    const c = +b.dataset.caps;
+    if (c < MIN_CAPS) { b.remove(); return; }
+    b.append(el('span', { class: 'chip-price', text: capsTotal(c) }));
+    b.setAttribute('aria-label', `${c} keycaps, ${capsTotal(c)}`);
+  });
+  if (state.caps < MIN_CAPS) state.caps = MIN_CAPS;
+  const xs = $('extra-cap');
+  FILAMENT.forEach(f => xs.append(el('option', { value: f.id, text: f.name })));
+  xs.value = state.extraCap;
+  swatchSelect(xs);
+  xs.addEventListener('change', () => { state.extraCap = xs.value; updateText(); });
+  $('extra-minus').addEventListener('click', () => { state.extra = Math.max(0, state.extra - 1); updateText(); });
+  $('extra-plus').addEventListener('click', () => { state.extra = Math.min(MAX_EXTRA, state.extra + 1); updateText(); });
+  renderPresets(); renderSlots(); renderCaseFils(); renderColourSelect();
+  wireCopy('o'); wireCopy('c');
+  if (has3D) {
+    try { initMain(); initHero(); requestAnimationFrame(loop); }
+    catch (e) { $('stage-fail').hidden = false; main = null; }
+  } else {
+    $('stage-fail').hidden = false;
+  }
+  updateText();
+  setHeroPaused(heroPaused);
+  if (!has3D) $('hero-pause').hidden = true;
+})();
+</script>
+</body>
+</html>

@@ -1457,7 +1457,18 @@ footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; hei
   /* Send the order straight to our inbox through FormSubmit (formsubmit.co). Each inbox has to be activated once:
      the first order sent to it triggers an "Activate form" email; click the button in that email. If sending fails
      (no internet, not activated yet, or the page is opened somewhere that blocks it), the manual email options show instead. */
+  // Order tracker: the Google Sheet's Apps Script "Web app URL". Every order is also added there as a new row.
+  const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzJ_9eq1y_zslaJJzuuM3It6mG-H-uYDOGAOJpti0u81cKk92NbVWQaHrWA9Kzqs3lD/exec';
+  function logToSheet(code, subject, body) {
+    if (!SHEET_URL) return;
+    try {
+      fetch(SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ code, subject, body }) }).catch(() => {});
+    } catch (err) { /* the order email still goes out */ }
+  }
+
   async function sendOrder(prefix, { person, code, subject, body, file, manualSteps, sentSteps }) {
+    logToSheet(code, subject, body);
     const email = (person.email || '').trim();
     const btn = $(`${prefix}-form`).querySelector('button[type=submit]'), label = btn.textContent;
     const fallback = () => showSend(prefix, { person, code, subject, body, steps: manualSteps });

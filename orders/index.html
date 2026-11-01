@@ -200,7 +200,7 @@ window.orders = (() => {
   const el = (tag, attrs = {}, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs)) { if (k === 'text') e.textContent = v; else e.setAttribute(k, v); } kids.forEach(k => k != null && e.append(k)); return e; };
   const FLOW = [['new', 'New', 'New'], ['printing', 'Printing', 'Printing'], ['ready', 'Ready to pick up', 'Ready to pick up'], ['done', 'Paid & picked up', 'Picked up']];
   const SHEET_TO = { 'new': 'new', 'printing': 'printing', 'ready to pick up': 'ready', 'picked up': 'done', 'cancelled': 'cancelled', 'canceled': 'cancelled' };
-  const COLOURS = { red: '#d8343a', orange: '#f07a22', yellow: '#f5cf2a', 'light green': '#8fd96a', 'sky blue': '#4aa3f0', cyan: '#0086d6', purple: '#5a2fb8',
+  const COLOURS = { red: '#d8343a', orange: '#f07a22', yellow: '#f5cf2a', 'light green': '#8fd96a', green: '#00ae42', gray: '#8e9089', grey: '#8e9089', 'sky blue': '#4aa3f0', cyan: '#0086d6', purple: '#5a2fb8',
     magenta: '#d1338f', 'hot pink': '#f5547c', brown: '#7a4a2c', black: '#1e1d24', 'matte black': '#2a2a2e', white: '#ecebf3', 'matte white': '#e2e1e5' };
   const money = v => (v == null || isNaN(v) ? '—' : Number.isInteger(v) ? `$${v}` : `$${v.toFixed(2)}`);
   const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };

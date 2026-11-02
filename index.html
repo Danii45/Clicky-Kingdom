@@ -515,7 +515,7 @@ footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; hei
           <div class="group-head"><span class="label" id="lbl-case">Case colour</span><span class="val" id="case-name">Purple</span></div>
           <div class="fils" id="case-fils" role="group" aria-labelledby="lbl-case"></div>
         </div>
-        <p class="fine" id="build-note">Every clicker comes with Keychron Mint switches. 1-key and 2-key clickers can also have Epomaker Creamy Jade linear switches.</p>
+        <p class="fine" id="build-note">Every clicker comes with Keychron Mint switches. 1-, 2- and 3-key clickers can also have Epomaker Creamy Jade linear switches.</p>
       </div>
     </div>
 
@@ -645,7 +645,7 @@ footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; hei
   // only: the layouts (ids from LAYOUTS) a switch is offered on. Leave it out to offer it on every clicker.
   const KEYS = [
     { id: 'mint', name: 'Keychron Mint', feel: 'tactile', sound: 'crisp', color: '#7fe3c2' },                          // Keychron K Pro Mint
-    { id: 'jade', name: 'Epomaker Creamy Jade', short: 'Creamy Jade', feel: 'linear', color: '#5fd3c8', only: ['1', '2'] }   // 1-key and 2-key clickers only
+    { id: 'jade', name: 'Epomaker Creamy Jade', short: 'Creamy Jade', feel: 'linear', color: '#5fd3c8', only: ['1', '2', '3'] }   // 1-, 2- and 3-key clickers only
   ];
   const FILAMENT = [
     { id: 'red',     name: 'Red',         hex: '#d8343a' },
@@ -802,7 +802,7 @@ footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; hei
     $('stage-hint').textContent = caps ? 'Drag to turn them.' : 'Drag to turn it. Hold a key down, then let go.';
     $('slots-title').textContent = caps ? 'Each keycap' : 'Each key';
     $('slots-cols').textContent = caps ? 'Colour' : 'Switch · keycap';
-    $('build-note').textContent = caps ? `These keycaps fit any MX-style switch, like Keychron Mint, Cherry MX and Gateron. XDA profile, ${Math.round(CAP_PRICE * 100)}¢ each, ${MIN_CAPS} to ${MAX_CAPS} per order.` : 'Every clicker comes with Keychron Mint switches. 1-key and 2-key clickers can also have Epomaker Creamy Jade linear switches.';
+    $('build-note').textContent = caps ? `These keycaps fit any MX-style switch, like Keychron Mint, Cherry MX and Gateron. XDA profile, ${Math.round(CAP_PRICE * 100)}¢ each, ${MIN_CAPS} to ${MAX_CAPS} per order.` : 'Every clicker comes with Keychron Mint switches. 1-, 2- and 3-key clickers can also have Epomaker Creamy Jade linear switches.';
     $('order-title').textContent = caps ? 'Order these keycaps' : 'Order this clicker';
     $('next-order').textContent = caps ? 'Order these keycaps' : 'Order this clicker';
     $('next-price').textContent = caps ? capsTotal(c) : money(clickerTotal());

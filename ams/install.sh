@@ -1,21 +1,22 @@
 #!/bin/bash
-# Installs Clicky AMS on Kubuntu/Ubuntu: shows what's loaded in your Bambu Lab AMS, over your home Wi-Fi.
+# Installs Clicky AMS on Kubuntu/Ubuntu: a filament dashboard for your Bambu Lab printer, over your home Wi-Fi.
 # Run:  wget -O- https://danii45.github.io/Clicky-Kingdom/ams/install.sh | bash
 set -e
 URL="https://danii45.github.io/Clicky-Kingdom/ams/"
 DIR="$HOME/.local/share/clicky-ams"
 echo "Installing Clicky AMS..."
 echo "(You may be asked for your computer password, to install the parts it needs.)"
-sudo apt-get install -y python3-gi python3-gi-cairo gir1.2-gtk-3.0 python3-paho-mqtt >/dev/null
+sudo apt-get install -y python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.1 python3-paho-mqtt >/dev/null
 mkdir -p "$DIR" "$HOME/.local/bin" "$HOME/.local/share/applications"
 wget -qO "$DIR/clicky-ams.py" "${URL}clicky-ams.py"
 wget -qO "$DIR/icon.png" "${URL}icon.png"
+wget -qO "$DIR/dashboard.html" "${URL}dashboard.html"
 chmod +x "$DIR/clicky-ams.py"
 ln -sf "$DIR/clicky-ams.py" "$HOME/.local/bin/clicky-ams"
 cat > "$HOME/.local/share/applications/clicky-ams.desktop" <<EOF
 [Desktop Entry]
 Name=Clicky AMS
-Comment=What's loaded in the Bambu Lab AMS
+Comment=Filament dashboard for the Bambu Lab printer
 Exec=/usr/bin/python3 $DIR/clicky-ams.py
 Icon=$DIR/icon.png
 Terminal=false

@@ -1,48 +1,60 @@
 #!/usr/bin/python3
-"""Clicky AMS: shows what filament is loaded in a Bambu Lab printer's AMS, over your home Wi-Fi.
+"""Clicky AMS: a filament dashboard for a Bambu Lab printer, over your home Wi-Fi.
 
-It only reads. It talks to the printer directly on your network (port 8883, the printer's own
-MQTT server) using the access code from the printer's screen. Nothing goes through the internet.
+It remembers your printer, stays connected while open, and shows the printer's status, what's in the
+AMS, and all your spools (including ones on the shelf). It only reads from the printer, using the
+access code from the printer's screen, and nothing goes through the internet.
 
-  clicky-ams            opens the window
-  clicky-ams --text     prints the slots in the terminal (uses the saved settings)
+  clicky-ams            opens the dashboard
+  clicky-ams --text     prints the AMS slots in the terminal
   clicky-ams --find     looks for printers on your network
 """
 import json, os, socket, ssl, sys, threading, time
 
+HERE = os.path.dirname(os.path.realpath(__file__))
 CONFIG = os.path.expanduser("~/.config/clicky-ams.json")
 
-# The website's colours (Clicky Kingdom FILAMENT list). Each AMS spool is matched to the closest one.
-SITE_COLOURS = [
-    ("Red", "#d8343a"), ("Orange", "#f07a22"), ("Yellow", "#f5cf2a"), ("Light green", "#8fd96a"),
-    ("Green", "#00ae42"), ("Sky blue", "#4aa3f0"), ("Cyan", "#0086d6"), ("Purple", "#5a2fb8"),
-    ("Magenta", "#d1338f"), ("Hot pink", "#f5547c"), ("Brown", "#7a4a2c"), ("Gray", "#8e9089"),
-    ("Black", "#1e1d24"), ("Matte black", "#2a2a2e"), ("White", "#ecebf3"), ("Matte white", "#e2e1e5"),
+# Starting list of spools (from Daniel's Bambu filament library, Nov 2026). Edited in the app after that.
+STARTER_SPOOLS = [
+    {"name": "Charcoal", "type": "PLA Matte", "brand": "Bambu Lab", "hex": "#000000", "grams": 650},
+    {"name": "Gray", "type": "PLA Basic", "brand": "Bambu Lab", "hex": "#8e9089", "grams": 1000},
+    {"name": "Bambu Green", "type": "PLA Basic", "brand": "Bambu Lab", "hex": "#00ae42", "grams": 43},
+    {"name": "Orange", "type": "PLA Basic", "brand": "Bambu Lab", "hex": "#ff6a13", "grams": 40},
+    {"name": "Orange", "type": "PLA Basic", "brand": "Bambu Lab", "hex": "#f98c36", "grams": 1000},
+    {"name": "Grey (came with printer)", "type": "PLA Basic", "brand": "Bambu Lab", "hex": "#c8c8c8", "grams": 1000, "noSite": True},
+    {"name": "Dark Brown", "type": "PLA", "brand": "Generic", "hex": "#7d4e00", "grams": 1000},
+    {"name": "Red", "type": "PLA", "brand": "Generic", "hex": "#f72323", "grams": 1000},
+    {"name": "Cyan", "type": "PLA Basic", "brand": "Bambu Lab", "hex": "#0086d6", "grams": 1000},
+    {"name": "Ivory White", "type": "PLA Matte", "brand": "Bambu Lab", "hex": "#fffff0", "grams": 1000},
+    {"name": "White", "type": "Support for PLA", "brand": "Bambu Lab", "hex": "#ffffff", "grams": 35, "support": True},
 ]
-LOW_PERCENT = 15
 
 
 # ---------- settings ----------
 def load_config():
     try:
         with open(CONFIG) as f:
-            return json.load(f)
+            cfg = json.load(f)
     except Exception:
-        return {}
+        cfg = {}
+    if "spools" not in cfg:
+        cfg["spools"] = [dict(s, id=f"s{i + 1}") for i, s in enumerate(STARTER_SPOOLS)]
+    return cfg
 
 
 def save_config(cfg):
     os.makedirs(os.path.dirname(CONFIG), exist_ok=True)
-    with open(CONFIG, "w") as f:
+    tmp = CONFIG + ".tmp"
+    with open(tmp, "w") as f:
         json.dump(cfg, f, indent=1)
-    os.chmod(CONFIG, 0o600)   # the access code is in here, so only you can read it
+    os.chmod(tmp, 0o600)   # the access code is in here, so only you can read it
+    os.replace(tmp, CONFIG)
 
 
 # ---------- finding the printer ----------
 def find_printers(seconds=8):
     """Bambu printers announce themselves on the network every few seconds (SSDP on UDP 1990/2021)."""
-    found = {}
-    socks = []
+    found, socks = {}, []
     for port in (2021, 1990):
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -50,8 +62,8 @@ def find_printers(seconds=8):
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             s.bind(("", port))
             try:
-                mreq = socket.inet_aton("239.255.255.250") + socket.inet_aton("0.0.0.0")
-                s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+                s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP,
+                             socket.inet_aton("239.255.255.250") + socket.inet_aton("0.0.0.0"))
             except OSError:
                 pass
             s.settimeout(0.5)
@@ -99,43 +111,60 @@ def parse_ssdp(text, sender_ip):
             "name": h.get("devname.bambu.com", "") or "Bambu printer", "model": models.get(model, model)}
 
 
-# ---------- reading the AMS ----------
-def read_printer(ip, serial, code, timeout=15):
-    """Connects to the printer's MQTT server, asks for its full status once, and returns the report."""
+# ---------- talking to the printer ----------
+def make_client(code):
     import paho.mqtt.client as mqtt
-    got, err = {}, {}
-    done = threading.Event()
-    report_topic, request_topic = f"device/{serial}/report", f"device/{serial}/request"
-
-    def on_connect(c, u, flags, rc, *rest):
-        rc = getattr(rc, "value", rc)
-        if rc != 0:
-            err["msg"] = ("The printer said no. Check the access code (it changes if you turn LAN mode off and on)."
-                          if rc in (4, 5, 134, 135) else f"The printer refused the connection (code {rc}).")
-            done.set()
-            return
-        c.subscribe(report_topic)
-        c.publish(request_topic, json.dumps({"pushing": {"sequence_id": "0", "command": "pushall"}}))
-
-    def on_message(c, u, msg):
-        try:
-            data = json.loads(msg.payload.decode("utf-8", "replace"))
-        except Exception:
-            return
-        p = data.get("print") or {}
-        if "ams" in p or "vt_tray" in p:
-            got.update(p)
-            done.set()
-
+    cid = f"clicky-ams-{os.getpid()}-{int(time.time()) % 10000}"
     try:
-        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=f"clicky-ams-{os.getpid()}")
+        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=cid)
     except AttributeError:   # paho-mqtt 1.x (Ubuntu 24.04)
-        client = mqtt.Client(client_id=f"clicky-ams-{os.getpid()}")
+        client = mqtt.Client(client_id=cid)
     client.username_pw_set("bblp", code)
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE   # the printer uses its own self-signed certificate
     client.tls_set_context(ctx)
+    return client
+
+
+def refused_message(rc):
+    rc = getattr(rc, "value", rc)
+    if rc in (4, 5, 134, 135):
+        return "The printer said no. Check the access code (it changes if you turn LAN mode off and on)."
+    return f"The printer refused the connection (code {rc})."
+
+
+def merge(dst, src):
+    """The printer sends small updates; fold them into the full picture."""
+    for k, v in src.items():
+        if isinstance(v, dict) and isinstance(dst.get(k), dict):
+            merge(dst[k], v)
+        else:
+            dst[k] = v
+
+
+def read_printer(ip, serial, code, timeout=15):
+    """One-off read (used by --text)."""
+    got, err, done = {}, {}, threading.Event()
+
+    def on_connect(c, u, flags, rc, *rest):
+        if getattr(rc, "value", rc) != 0:
+            err["msg"] = refused_message(rc)
+            done.set()
+            return
+        c.subscribe(f"device/{serial}/report")
+        c.publish(f"device/{serial}/request", json.dumps({"pushing": {"sequence_id": "0", "command": "pushall"}}))
+
+    def on_message(c, u, msg):
+        try:
+            p = json.loads(msg.payload.decode("utf-8", "replace")).get("print") or {}
+        except Exception:
+            return
+        if "ams" in p or "vt_tray" in p:
+            got.update(p)
+            done.set()
+
+    client = make_client(code)
     client.on_connect, client.on_message = on_connect, on_message
     try:
         client.connect(ip, 8883, keepalive=30)
@@ -156,60 +185,167 @@ def read_printer(ip, serial, code, timeout=15):
             pass
 
 
-def hex_rgb(h):
-    h = h.lstrip("#")[:6]
-    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4)) if len(h) == 6 else (128, 128, 128)
+class LiveLink:
+    """Stays connected to the printer and calls on_update(state) whenever something changes."""
+
+    def __init__(self, on_update):
+        self.on_update = on_update
+        self.client = None
+        self.report = {}
+        self.settings = None
+        self.lock = threading.Lock()
+        self.last_push = 0
+        self.last_sent = 0
+        self.pending = False
+        self.status = {"connected": False, "error": "", "connecting": False}
+
+    def start(self, ip, serial, code):
+        self.stop()
+        if not (ip and serial and code):
+            return
+        self.settings = (ip, serial, code)
+        self.report = {}
+        self.status = {"connected": False, "error": "", "connecting": True}
+        self.emit(force=True)
+        threading.Thread(target=self._run, args=(ip, serial, code), daemon=True).start()
+
+    def _run(self, ip, serial, code):
+        client = make_client(code)
+        self.client = client
+
+        def on_connect(c, u, flags, rc, *rest):
+            if getattr(rc, "value", rc) != 0:
+                self.status = {"connected": False, "error": refused_message(rc), "connecting": False}
+                self.emit(force=True)
+                c.disconnect()
+                return
+            self.status = {"connected": True, "error": "", "connecting": False}
+            c.subscribe(f"device/{serial}/report")
+            self.pushall()
+            self.emit(force=True)
+
+        def on_disconnect(c, u, *rest):
+            if self.client is client and self.status.get("connected"):
+                self.status = {"connected": False, "error": "Lost the connection to the printer. Trying again…", "connecting": True}
+                self.emit(force=True)
+
+        def on_message(c, u, msg):
+            try:
+                p = json.loads(msg.payload.decode("utf-8", "replace")).get("print")
+            except Exception:
+                return
+            if isinstance(p, dict):
+                with self.lock:
+                    merge(self.report, p)
+                self.emit()
+
+        client.on_connect, client.on_disconnect, client.on_message = on_connect, on_disconnect, on_message
+        client.reconnect_delay_set(2, 30)
+        while self.client is client:
+            try:
+                client.connect(ip, 8883, keepalive=30)
+                client.loop_forever(retry_first_connection=True)
+                break
+            except Exception as e:
+                self.status = {"connected": False, "connecting": False,
+                               "error": f"Can't reach the printer at {ip}. Is it on, and on the same Wi-Fi as this computer?"}
+                self.emit(force=True)
+                for _ in range(30):   # try again in 30 seconds
+                    if self.client is not client:
+                        return
+                    time.sleep(1)
+
+    def pushall(self):
+        c, s = self.client, self.settings
+        if c and s:
+            self.last_push = time.time()
+            c.publish(f"device/{s[1]}/request", json.dumps({"pushing": {"sequence_id": str(int(time.time())), "command": "pushall"}}))
+
+    def tick(self):
+        """Every so often, ask for the full picture again (not too often: it's heavy for P1 printers)."""
+        if self.status.get("connected") and time.time() - self.last_push > 300:
+            self.pushall()
+
+    def stop(self):
+        c, self.client = self.client, None
+        if c:
+            try:
+                c.disconnect()
+            except Exception:
+                pass
+
+    def emit(self, force=False):
+        now = time.time()
+        if not force and now - self.last_sent < 0.8:   # at most about once a second
+            if not self.pending:
+                self.pending = True
+                threading.Timer(1.0, self._flush).start()
+            return
+        self.last_sent = now
+        with self.lock:
+            snap = summarize(self.report)
+        snap.update(self.status)
+        self.on_update(snap)
+
+    def _flush(self):
+        self.pending = False
+        self.emit(force=True)
 
 
-def site_match(hexcol, matte):
-    r, g, b = hex_rgb(hexcol)
-    best = min(SITE_COLOURS, key=lambda c: sum((x - y) ** 2 for x, y in zip((r, g, b), hex_rgb(c[1]))))[0]
-    if matte and best in ("Black", "White"):
-        best = "Matte " + best.lower()
-    if not matte and best.startswith("Matte "):
-        best = best[6:].capitalize()
-    return best
-
-
-def slots_from(report):
-    """Turns the printer's report into a simple list of slots."""
-    ams = report.get("ams") or {}
+def summarize(p):
+    """Turns the printer's report into what the dashboard shows."""
+    ams = p.get("ams") or {}
     now = str(ams.get("tray_now", ""))
-    out = []
-    for unit in ams.get("ams") or []:
+    units = ams.get("ams") or []
+    slots = []
+    for unit in units:
         u = int(unit.get("id", 0))
         for t in unit.get("tray") or []:
             i = int(t.get("id", 0))
-            out.append(slot(t, f"AMS {u + 1} · slot {i + 1}" if len(ams.get("ams")) > 1 else f"Slot {i + 1}",
-                            now == str(u * 4 + i)))
-    vt = report.get("vt_tray")
-    if vt and vt.get("tray_type"):
-        out.append(slot(vt, "External spool", now == "254"))
-    return out
+            where = f"AMS {u + 1} · {i + 1}" if len(units) > 1 else f"Slot {i + 1}"
+            slots.append(tray_info(t, where, now == str(u * 4 + i), f"{u}-{i}"))
+    vt = p.get("vt_tray")
+    if isinstance(vt, dict) and vt.get("tray_type"):
+        slots.append(tray_info(vt, "External", now == "254", "ext"))
+
+    def num(k):
+        try:
+            return float(p.get(k))
+        except (TypeError, ValueError):
+            return None
+
+    return {
+        "hasData": bool(p),
+        "ams": slots,
+        "amsHumidity": (units[0].get("humidity") if units else None),
+        "job": {
+            "state": p.get("gcode_state") or "",
+            "percent": num("mc_percent"),
+            "minutesLeft": num("mc_remaining_time"),
+            "name": p.get("subtask_name") or "",
+            "layer": num("layer_num"), "layers": num("total_layer_num"),
+            "nozzle": num("nozzle_temper"), "nozzleTarget": num("nozzle_target_temper"),
+            "bed": num("bed_temper"), "bedTarget": num("bed_target_temper"),
+            "wifi": p.get("wifi_signal") or "",
+        },
+    }
 
 
-def slot(t, where, active):
+def tray_info(t, where, active, key):
     kind = t.get("tray_type") or ""
     if not kind:
-        return {"where": where, "empty": True, "active": active}
-    colour = "#" + (t.get("tray_color") or "808080FF")[:6]
-    sub = t.get("tray_sub_brands") or ""
+        return {"key": key, "where": where, "empty": True, "active": active}
     try:
         remain = int(t.get("remain", -1))
     except (TypeError, ValueError):
         remain = -1
-    matte = "matte" in sub.lower()
-    return {"where": where, "empty": False, "active": active, "type": kind, "name": sub or kind,
-            "colour": colour, "remain": remain, "low": 0 <= remain <= LOW_PERCENT,
-            "site": site_match(colour, matte)}
-
-
-def describe(s):
-    if s["empty"]:
-        return f"{s['where']}: empty"
-    left = f"{s['remain']}% left" if s["remain"] >= 0 else "amount unknown (no RFID tag)"
-    flags = (" · LOW" if s["low"] else "") + (" · printing with this now" if s["active"] else "")
-    return f"{s['where']}: {s['name']} {s['colour']} · {left} · website colour: {s['site']}{flags}"
+    try:
+        weight = int(float(t.get("tray_weight") or 1000))
+    except (TypeError, ValueError):
+        weight = 1000
+    return {"key": key, "where": where, "empty": False, "active": active, "type": kind,
+            "name": t.get("tray_sub_brands") or kind, "hex": "#" + (t.get("tray_color") or "808080FF")[:6].lower(),
+            "remain": remain, "weight": weight or 1000}
 
 
 # ---------- terminal mode ----------
@@ -223,218 +359,117 @@ def main_text():
         if not ps:
             print("  None found. Type the printer's IP address in the app instead.")
         return
-    if not all(cfg.get(k) for k in ("ip", "serial", "code")):
-        print("Open Clicky AMS once and fill in the printer settings first.")
+    pr = cfg.get("printer") or {}
+    if not all(pr.get(k) for k in ("ip", "serial", "code")):
+        print("Open Clicky AMS once and connect your printer first.")
         sys.exit(1)
-    for s in slots_from(read_printer(cfg["ip"], cfg["serial"], cfg["code"])):
-        print(describe(s))
+    for s in summarize(read_printer(pr["ip"], pr["serial"], pr["code"]))["ams"]:
+        if s["empty"]:
+            print(f"{s['where']}: empty")
+        else:
+            left = f"{s['remain']}% left" if s["remain"] >= 0 else "amount unknown (no RFID tag)"
+            print(f"{s['where']}: {s['name']} {s['hex']} · {left}" + (" · printing with this now" if s["active"] else ""))
 
 
-# ---------- the window ----------
+# ---------- the dashboard window ----------
 def main_window():
     import gi
     gi.require_version("Gtk", "3.0")
-    from gi.repository import Gtk, GLib, Gdk
+    gi.require_version("WebKit2", "4.1")
+    from gi.repository import Gtk, GLib, WebKit2
 
-    cfg = load_config()
     GLib.set_prgname("clicky-ams")
     GLib.set_application_name("Clicky AMS")
+    cfg = load_config()
 
-    css = Gtk.CssProvider()
-    css.load_from_data(b"""
-      .title { font-size: 22px; font-weight: 800; }
-      .muted { opacity: .7; }
-      .bad { color: #d8343a; }
-      .slot { padding: 10px 6px; }
-      .slotname { font-weight: 700; font-size: 15px; }
-      .low { background: #e0531b; color: white; border-radius: 6px; padding: 1px 6px; font-weight: 700; font-size: 11px; }
-      .now { background: #5a2fb8; color: white; border-radius: 6px; padding: 1px 6px; font-weight: 700; font-size: 11px; }
-    """)
-    Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+    ucm = WebKit2.UserContentManager()
+    ucm.register_script_message_handler("ams")
+    view = WebKit2.WebView.new_with_user_content_manager(ucm)
+    s = view.get_settings()
+    s.set_enable_developer_extras(False)
+    s.set_allow_file_access_from_file_urls(True)
+
+    def send(msg):
+        js = "window.fromApp && window.fromApp(" + json.dumps(msg) + ");"
+        def run():
+            try:
+                view.evaluate_javascript(js, -1, None, None, None, None, None)
+            except AttributeError:
+                view.run_javascript(js, None, None, None)
+            return False
+        GLib.idle_add(run)
+
+    def public_config():
+        pr = dict(cfg.get("printer") or {})
+        pr["hasCode"] = bool(pr.pop("code", ""))
+        return {"type": "config", "printer": pr, "spools": cfg["spools"]}
+
+    link = LiveLink(lambda state: send(dict(state, type="state")))
+
+    def connect_saved():
+        pr = cfg.get("printer") or {}
+        link.start(pr.get("ip", ""), pr.get("serial", ""), pr.get("code", ""))
+
+    def on_message(manager, result):
+        try:
+            try:
+                raw = result.get_js_value().to_string()
+            except AttributeError:
+                raw = result.to_string()
+            msg = json.loads(raw)
+        except Exception:
+            return
+        kind = msg.get("type")
+        if kind == "ready":
+            send(public_config())
+            connect_saved()
+        elif kind == "savePrinter":
+            pr = cfg.get("printer") or {}
+            pr.update({k: str(msg.get(k, "")).strip() for k in ("ip", "serial", "name", "model")})
+            if str(msg.get("code", "")).strip():
+                pr["code"] = str(msg["code"]).strip()
+            cfg["printer"] = pr
+            save_config(cfg)
+            send(public_config())
+            connect_saved()
+        elif kind == "forgetPrinter":
+            link.stop()
+            cfg.pop("printer", None)
+            save_config(cfg)
+            send(public_config())
+            send({"type": "state", "connected": False, "connecting": False, "error": "", "hasData": False, "ams": [], "job": {}})
+        elif kind == "saveSpools":
+            cfg["spools"] = msg.get("spools") or []
+            save_config(cfg)
+        elif kind == "refresh":
+            if link.status.get("connected"):
+                link.pushall()
+            else:
+                connect_saved()
+        elif kind == "find":
+            def work():
+                send({"type": "found", "printers": find_printers()})
+            threading.Thread(target=work, daemon=True).start()
+
+    ucm.connect("script-message-received::ams", on_message)
 
     win = Gtk.Window(title="Clicky AMS")
-    win.set_default_size(560, 640)
-    icon = os.path.expanduser("~/.local/share/clicky-ams/icon.png")
+    win.set_default_size(1240, 860)
+    icon = os.path.join(HERE, "icon.png")
     if os.path.exists(icon):
         try:
             win.set_icon_from_file(icon)
         except Exception:
             pass
-    win.connect("destroy", Gtk.main_quit)
+    win.add(view)
 
-    outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, margin=18)
-    win.add(outer)
-    title = Gtk.Label(label="What's in the AMS", xalign=0)
-    title.get_style_context().add_class("title")
-    outer.pack_start(title, False, False, 0)
-    status = Gtk.Label(xalign=0, wrap=True)
-    status.get_style_context().add_class("muted")
-    outer.pack_start(status, False, False, 0)
-
-    # settings
-    exp = Gtk.Expander(label="Printer settings")
-    grid = Gtk.Grid(column_spacing=10, row_spacing=8, margin_top=8)
-    exp.add(grid)
-    entries = {}
-    rows = [("ip", "Printer IP address", "e.g. 192.168.1.50"),
-            ("serial", "Serial number", "Printer screen: Settings → Device"),
-            ("code", "Access code", "Printer screen: Settings → Network")]
-    for r, (key, label, hint) in enumerate(rows):
-        grid.attach(Gtk.Label(label=label, xalign=0), 0, r, 1, 1)
-        e = Gtk.Entry(text=cfg.get(key, ""), placeholder_text=hint, hexpand=True)
-        if key == "code":
-            e.set_visibility(False)
-        entries[key] = e
-        grid.attach(e, 1, r, 1, 1)
-    btns = Gtk.Box(spacing=8)
-    find_btn = Gtk.Button(label="Find my printer")
-    save_btn = Gtk.Button(label="Save")
-    btns.pack_start(find_btn, False, False, 0)
-    btns.pack_start(save_btn, False, False, 0)
-    grid.attach(btns, 1, len(rows), 1, 1)
-    outer.pack_start(exp, False, False, 0)
-
-    check_btn = Gtk.Button(label="Check the AMS")
-    outer.pack_start(check_btn, False, False, 0)
-
-    listbox = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
-    scroll = Gtk.ScrolledWindow(vexpand=True)
-    scroll.add(listbox)
-    outer.pack_start(scroll, True, True, 0)
-
-    def set_status(text, bad=False):
-        status.set_text(text)
-        ctx = status.get_style_context()
-        (ctx.add_class if bad else ctx.remove_class)("bad")
-
-    def swatch(hexcol, empty):
-        area = Gtk.DrawingArea()
-        area.set_size_request(40, 40)
-        r, g, b = (x / 255 for x in hex_rgb(hexcol or "#888888"))
-
-        def draw(w, cr):
-            cr.arc(20, 20, 17, 0, 6.2832)
-            if empty:
-                cr.set_source_rgba(.5, .5, .5, .6)
-                cr.set_dash([3, 3])
-                cr.set_line_width(2)
-                cr.stroke()
-            else:
-                cr.set_source_rgb(r, g, b)
-                cr.fill_preserve()
-                cr.set_source_rgba(.5, .5, .5, .5)
-                cr.set_line_width(1)
-                cr.stroke()
-        area.connect("draw", draw)
-        return area
-
-    def show_slots(slots):
-        for child in listbox.get_children():
-            listbox.remove(child)
-        for s in slots:
-            row = Gtk.Box(spacing=12)
-            row.get_style_context().add_class("slot")
-            row.pack_start(swatch(s.get("colour"), s["empty"]), False, False, 0)
-            text = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
-            top = Gtk.Box(spacing=6)
-            name = Gtk.Label(label=s["where"] + ("  ·  empty" if s["empty"] else f"  ·  {s['name']}"), xalign=0)
-            name.get_style_context().add_class("slotname")
-            top.pack_start(name, False, False, 0)
-            for flag, cls in ((s.get("low"), "low"), (s.get("active"), "now")):
-                if flag:
-                    tag = Gtk.Label(label="LOW" if cls == "low" else "PRINTING")
-                    tag.get_style_context().add_class(cls)
-                    top.pack_start(tag, False, False, 0)
-            text.pack_start(top, False, False, 0)
-            if not s["empty"]:
-                left = f"{s['remain']}% left" if s["remain"] >= 0 else "Amount unknown (no RFID tag)"
-                sub = Gtk.Label(label=f"{left}  ·  website colour: {s['site']}  ·  {s['colour']}", xalign=0)
-                sub.get_style_context().add_class("muted")
-                text.pack_start(sub, False, False, 0)
-            row.pack_start(text, True, True, 0)
-            listbox.add(row)
-        listbox.show_all()
-
-    def current():
-        return {k: e.get_text().strip() for k, e in entries.items()}
-
-    def do_save(*_):
-        cfg.update(current())
-        save_config(cfg)
-        set_status("Saved.")
-
-    busy = {"on": False}
-
-    def do_check(*_):
-        c = current()
-        if not all(c.values()):
-            exp.set_expanded(True)
-            set_status("Fill in the printer settings first. “Find my printer” fills in the IP and serial.", True)
-            return
-        if busy["on"]:
-            return
-        busy["on"] = True
-        check_btn.set_sensitive(False)
-        set_status("Asking the printer…")
-
-        def work():
-            try:
-                slots = slots_from(read_printer(c["ip"], c["serial"], c["code"]))
-                def ok():
-                    show_slots(slots)
-                    low = [s for s in slots if s.get("low")]
-                    set_status(f"Updated {time.strftime('%-I:%M %p')}. " +
-                               (f"Running low: {', '.join(s['name'] + ' (' + s['site'] + ')' for s in low)}." if low else "Nothing is running low.") +
-                               " Checks again every minute.")
-                GLib.idle_add(ok)
-                cfg.update(c)
-                save_config(cfg)
-            except Exception as e:
-                msg = str(e) if isinstance(e, RuntimeError) else f"Something went wrong: {e}"
-                GLib.idle_add(lambda: set_status(msg, True))
-            finally:
-                def done():
-                    busy["on"] = False
-                    check_btn.set_sensitive(True)
-                GLib.idle_add(done)
-        threading.Thread(target=work, daemon=True).start()
-
-    def do_find(*_):
-        find_btn.set_sensitive(False)
-        set_status("Looking for your printer on the Wi-Fi (about 8 seconds)…")
-
-        def work():
-            ps = find_printers()
-            def show():
-                find_btn.set_sensitive(True)
-                if not ps:
-                    set_status("Couldn't find it automatically. Type the IP address from the printer's screen "
-                               "(Settings → Network) and the serial number (Settings → Device).", True)
-                    return
-                p = ps[0]
-                entries["ip"].set_text(p["ip"])
-                entries["serial"].set_text(p["serial"])
-                set_status(f"Found {p['name']} ({p['model']}) at {p['ip']}. Now type the access code and press “Check the AMS”.")
-                entries["code"].grab_focus()
-            GLib.idle_add(show)
-        threading.Thread(target=work, daemon=True).start()
-
-    find_btn.connect("clicked", do_find)
-    save_btn.connect("clicked", do_save)
-    check_btn.connect("clicked", do_check)
-
+    def quit_(*_):
+        link.stop()
+        Gtk.main_quit()
+    win.connect("destroy", quit_)
+    GLib.timeout_add_seconds(30, lambda: (link.tick(), True)[1])
+    view.load_uri("file://" + os.path.join(HERE, "dashboard.html"))
     win.show_all()
-    if all(cfg.get(k) for k in ("ip", "serial", "code")):
-        do_check()
-    else:
-        exp.set_expanded(True)
-        set_status("First time: press “Find my printer”, then type the access code from the printer's screen.")
-
-    def tick():
-        if all(current().values()):
-            do_check()
-        return True
-    GLib.timeout_add_seconds(60, tick)
     Gtk.main()
 
 

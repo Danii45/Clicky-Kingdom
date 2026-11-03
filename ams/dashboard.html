@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clicky AMS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,700..800&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Clicky AMS: a filament dashboard. Same family as the shop: deep purple, candy accents, Bricolage headlines. */
+:root {
+  --bg: #120f1b; --bg2: #191427; --card: #1f1930; --card2: #282040; --line: rgba(255,255,255,.07);
+  --ink: #f4f1fb; --muted: #a39cb8; --faint: #6e6787;
+  --accent: #8b5cff; --accent2: #b993ff; --good: #3ddc84; --warn: #ffb020; --low: #ff6a3d; --bad: #ff5d6c;
+  --display: "Bricolage Grotesque", "Archivo", system-ui, sans-serif;
+  --font: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "Geist Mono", ui-monospace, monospace;
+  --r: 20px;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { background: #120f1b; }
+body { margin: 0; min-height: 100vh; }
+body {
+  background: radial-gradient(1200px 600px at 85% -10%, rgba(139,92,255,.22), transparent 60%),
+              radial-gradient(900px 500px at -10% 110%, rgba(255,106,61,.10), transparent 60%), var(--bg);
+  color: var(--ink); font: 400 15px/1.5 var(--font); -webkit-font-smoothing: antialiased; background-attachment: fixed;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 28px 28px 48px; }
+
+/* header */
+.top { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+.eyebrow { font: 700 12px/1 var(--font); letter-spacing: .16em; text-transform: uppercase; color: var(--accent2); margin: 0 0 8px; }
+h1 { font: 800 44px/1 var(--display); margin: 0; letter-spacing: -.02em; }
+h2 { font: 800 20px/1.1 var(--display); margin: 0; letter-spacing: -.01em; }
+.account { display: flex; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 8px 8px 8px 10px; }
+.avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, var(--accent), #5a2fb8); position: relative; }
+.avatar svg { width: 22px; height: 22px; }
+.avatar .dot { position: absolute; right: -1px; bottom: -1px; width: 13px; height: 13px; border-radius: 50%; border: 2.5px solid var(--card); background: var(--faint); }
+.avatar .dot.live { background: var(--good); box-shadow: 0 0 0 0 rgba(61,220,132,.6); animation: pulse 2.4s infinite; }
+.avatar .dot.wait { background: var(--warn); }
+.avatar .dot.off { background: var(--bad); }
+@keyframes pulse { 70% { box-shadow: 0 0 0 8px rgba(61,220,132,0); } 100% { box-shadow: 0 0 0 0 rgba(61,220,132,0); } }
+.who b { display: block; font-weight: 700; font-size: 15px; line-height: 1.2; }
+.who span { font-size: 13px; color: var(--muted); }
+.iconbtn { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--card2); display: grid; place-items: center; }
+.iconbtn:hover { background: #33294f; }
+.iconbtn svg { width: 18px; height: 18px; }
+.banner { background: rgba(255,93,108,.12); border: 1px solid rgba(255,93,108,.35); color: #ffd3d8; border-radius: 14px; padding: 12px 16px; margin: 0 0 18px; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+.banner.info { background: rgba(139,92,255,.12); border-color: rgba(139,92,255,.35); color: #e5dbff; }
+
+/* stat tiles */
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }
+.tile { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 20px; position: relative; overflow: hidden; }
+.tile b { display: block; font: 800 34px/1.05 var(--display); letter-spacing: -.02em; }
+.tile b small { font-size: 18px; font-weight: 700; color: var(--muted); margin-left: 3px; }
+.tile span { color: var(--muted); font-size: 13px; }
+.tile::after { content: ""; position: absolute; right: -30px; top: -30px; width: 100px; height: 100px; border-radius: 50%; background: var(--glow, rgba(139,92,255,.16)); filter: blur(4px); }
+.tile.low b { color: var(--low); }
+
+.grid { display: grid; grid-template-columns: 5fr 7fr; gap: 14px; margin-bottom: 14px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; }
+.cardhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.sub { color: var(--muted); font-size: 13px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font: 700 11px/1 var(--font); letter-spacing: .06em; text-transform: uppercase; padding: 5px 9px; border-radius: 999px; background: var(--card2); color: var(--muted); white-space: nowrap; }
+.pill.printing { background: rgba(139,92,255,.2); color: var(--accent2); }
+.pill.done { background: rgba(61,220,132,.15); color: var(--good); }
+.pill.paused { background: rgba(255,176,32,.15); color: var(--warn); }
+.pill.failed { background: rgba(255,93,108,.15); color: var(--bad); }
+.pill.low { background: var(--low); color: #fff; }
+.pill.now { background: var(--accent); color: #fff; }
+.pill.ams { background: rgba(139,92,255,.18); color: var(--accent2); }
+
+/* printer */
+.job-name { font: 700 17px/1.3 var(--font); margin: 0 0 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.progress { height: 12px; background: var(--card2); border-radius: 999px; overflow: hidden; margin: 14px 0 8px; }
+.progress i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, var(--accent), #ff5fa2); transition: width .6s ease; }
+.jobrow { display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; }
+.jobrow b { color: var(--ink); font-weight: 700; }
+.temps { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+.temp { background: var(--bg2); border-radius: 14px; padding: 12px 14px; }
+.temp span { color: var(--muted); font-size: 12px; display: block; }
+.temp b { font: 800 24px/1.1 var(--display); }
+.temp em { font-style: normal; color: var(--faint); font-size: 13px; margin-left: 4px; }
+.idle { display: grid; place-items: center; text-align: center; padding: 18px 0 6px; color: var(--muted); }
+.idle svg { width: 46px; height: 46px; opacity: .5; margin-bottom: 6px; }
+
+/* spool visual */
+.spool { --c: #888; --p: 100; width: 92px; height: 92px; border-radius: 50%; position: relative; flex: none;
+  background: conic-gradient(var(--c) calc(var(--p) * 1%), rgba(255,255,255,.07) 0); }
+.spool::before { content: ""; position: absolute; inset: 9px; border-radius: 50%; background: var(--card); }
+.spool::after { content: ""; position: absolute; inset: 17px; border-radius: 50%; background:
+  radial-gradient(circle at 50% 50%, var(--card) 0 11px, transparent 11.5px),
+  repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,.10) 0 1px, transparent 1px 3px), var(--c);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); }
+.spool.empty { background: none; border: 2px dashed rgba(255,255,255,.15); }
+.spool.empty::before, .spool.empty::after { display: none; }
+.spool.sm { width: 58px; height: 58px; }
+.spool.sm::before { inset: 6px; }
+.spool.sm::after { inset: 11px; background: radial-gradient(circle at 50% 50%, var(--card) 0 7px, transparent 7.5px),
+  repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,.10) 0 1px, transparent 1px 3px), var(--c); }
+
+/* AMS */
+.slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.slot { background: var(--bg2); border-radius: 16px; padding: 16px 12px 14px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; position: relative; border: 1px solid transparent; }
+.slot.active { border-color: rgba(139,92,255,.6); box-shadow: 0 0 0 4px rgba(139,92,255,.10); }
+.slot .where { font: 700 11px/1 var(--font); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.slot .nm { font-weight: 700; font-size: 14px; line-height: 1.25; }
+.slot .amt { font: 800 20px/1 var(--display); }
+.slot .amt small { font: 500 12px var(--font); color: var(--muted); }
+.slot .tags { display: flex; gap: 5px; min-height: 21px; flex-wrap: wrap; justify-content: center; }
+.slot .unk { font-size: 12px; color: var(--muted); }
+
+/* inventory */
+.toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.chip { border: 1px solid var(--line); background: var(--bg2); color: var(--muted); border-radius: 999px; padding: 7px 13px; font-size: 13px; font-weight: 600; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn { border: 0; border-radius: 12px; padding: 10px 16px; font-weight: 700; background: var(--card2); }
+.btn:hover { background: #33294f; }
+.btn.primary { background: var(--accent); color: #fff; }
+.btn.primary:hover { background: #9a70ff; }
+.btn.danger { background: transparent; color: var(--bad); padding-left: 0; }
+.spools { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
+.sp { background: var(--bg2); border: 1px solid transparent; border-radius: 16px; padding: 14px; display: flex; gap: 14px; align-items: center; text-align: left; width: 100%; color: inherit; }
+.sp:hover { border-color: var(--line); background: #1d1730; }
+.sp .info { min-width: 0; flex: 1; }
+.sp .row1 { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sp .nm { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.sp .meta { color: var(--muted); font-size: 12.5px; margin: 2px 0 8px; line-height: 1.4; }
+.sp .meta i { font-style: normal; color: var(--accent2); }
+.bar { height: 6px; border-radius: 999px; background: rgba(255,255,255,.07); overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: inherit; background: var(--c); min-width: 3px; }
+.sp .g { display: flex; justify-content: space-between; margin-top: 6px; font-size: 12.5px; color: var(--muted); }
+.sp .g b { color: var(--ink); font-family: var(--mono); font-weight: 500; }
+.sp.islow .g b { color: var(--low); }
+.empty-note { color: var(--muted); padding: 24px 0; text-align: center; }
+
+/* dialogs */
+dialog { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 22px; padding: 26px; width: min(460px, calc(100vw - 32px)); box-shadow: 0 30px 80px rgba(0,0,0,.5); }
+dialog::backdrop { background: rgba(8,5,16,.7); backdrop-filter: blur(3px); }
+dialog h2 { margin-bottom: 6px; }
+dialog p.sub { margin: 0 0 16px; }
+label.f { display: block; margin-bottom: 12px; }
+label.f span { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 5px; font-weight: 600; }
+input, select { width: 100%; font: inherit; color: var(--ink); background: var(--bg2); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; padding: 11px 13px; outline: none; }
+input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(139,92,255,.25); }
+input[type="color"] { padding: 4px; height: 46px; cursor: pointer; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.actions { display: flex; gap: 8px; justify-content: flex-end; align-items: center; margin-top: 8px; }
+.actions .spacer { flex: 1; }
+.found { font-size: 13px; color: var(--muted); min-height: 20px; margin: -4px 0 10px; }
+.found.bad { color: var(--bad); }
+
+@media (max-width: 980px) { .grid { grid-template-columns: 1fr; } .tiles { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .slots { grid-template-columns: repeat(2, 1fr); } h1 { font-size: 34px; } .wrap { padding: 20px 16px 40px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Clicky Kingdom</p>
+      <h1>Filament</h1>
+    </div>
+    <div class="account">
+      <div class="avatar" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 8h10M9 8v3h6V8M8 16h8"/></svg>
+        <span class="dot" id="dot"></span>
+      </div>
+      <div class="who"><b id="pr-name">No printer yet</b><span id="pr-status">Set it up to see live filament</span></div>
+      <button class="iconbtn" type="button" id="open-settings" aria-label="Printer settings" title="Printer settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" hidden><span id="banner-text"></span><button class="btn" type="button" id="banner-btn">Printer settings</button></div>
+
+  <section class="tiles" aria-label="Totals">
+    <div class="tile"><b id="t-total">0<small>kg</small></b><span>filament on hand</span></div>
+    <div class="tile" style="--glow: rgba(255,95,162,.14)"><b id="t-spools">0</b><span>spools</span></div>
+    <div class="tile low" style="--glow: rgba(255,106,61,.18)"><b id="t-low">0</b><span id="t-low-label">running low</span></div>
+    <div class="tile" style="--glow: rgba(61,220,132,.13)"><b id="t-site">0</b><span>website colours in stock</span></div>
+  </section>
+
+  <div class="grid">
+    <section class="card" aria-labelledby="printer-h">
+      <div class="cardhead"><h2 id="printer-h">Printer</h2><span class="pill" id="job-pill">Offline</span></div>
+      <div id="job-live" hidden>
+        <p class="job-name" id="job-name"></p>
+        <div class="sub" id="job-layers"></div>
+        <div class="progress"><i id="job-bar"></i></div>
+        <div class="jobrow"><span><b id="job-pct">0%</b> done</span><span id="job-left"></span></div>
+      </div>
+      <div class="idle" id="job-idle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 8h10M9 8v3h6V8M8 16h8"/></svg>
+        <span id="job-idle-text">Not connected</span>
+      </div>
+      <div class="temps">
+        <div class="temp"><span>Nozzle</span><b id="t-nozzle">–</b><em id="t-nozzle-t"></em></div>
+        <div class="temp"><span>Bed</span><b id="t-bed">–</b><em id="t-bed-t"></em></div>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="ams-h">
+      <div class="cardhead"><h2 id="ams-h">In the AMS</h2><span class="sub" id="ams-sub">Live from the printer</span></div>
+      <div class="slots" id="slots"></div>
+    </section>
+  </div>
+
+  <section class="card" aria-labelledby="inv-h">
+    <div class="cardhead">
+      <div><h2 id="inv-h">My filament</h2><div class="sub">Every spool you own. The ones in the AMS update by themselves.</div></div>
+      <div class="toolbar">
+        <div role="group" aria-label="Show" class="toolbar">
+          <button class="chip" type="button" data-f="all" aria-pressed="true">All</button>
+          <button class="chip" type="button" data-f="ams" aria-pressed="false">In the AMS</button>
+          <button class="chip" type="button" data-f="low" aria-pressed="false">Running low</button>
+        </div>
+        <button class="btn primary" type="button" id="add-spool">+ Add spool</button>
+      </div>
+    </div>
+    <div class="spools" id="spools"></div>
+  </section>
+</div>
+
+<dialog id="dlg-printer">
+  <form method="dialog" id="form-printer">
+    <h2>Your printer</h2>
+    <p class="sub">Saved on this computer, so it connects by itself every time you open the app. This computer has to be on the same Wi-Fi as the printer.</p>
+    <button class="btn" type="button" id="find" style="width:100%;margin-bottom:12px">Find my printer on the Wi-Fi</button>
+    <div class="found" id="found"></div>
+    <label class="f"><span>Name</span><input id="p-name" placeholder="Daniel's P1S" autocomplete="off"></label>
+    <div class="two">
+      <label class="f"><span>IP address</span><input id="p-ip" placeholder="192.168.1.50" autocomplete="off" spellcheck="false"></label>
+      <label class="f"><span>Serial number</span><input id="p-serial" placeholder="Settings → Device" autocomplete="off" spellcheck="false"></label>
+    </div>
+    <label class="f"><span>Access code <em style="font-style:normal;color:var(--faint)">(printer screen: Settings → Network)</em></span><input id="p-code" type="password" autocomplete="off" spellcheck="false"></label>
+    <div class="actions">
+      <button class="btn danger" type="button" id="forget">Forget printer</button>
+      <span class="spacer"></span>
+      <button class="btn" type="button" id="cancel-printer">Cancel</button>
+      <button class="btn primary" type="submit">Save &amp; connect</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-spool">
+  <form method="dialog" id="form-spool">
+    <h2 id="spool-title">Add a spool</h2>
+    <p class="sub">Spools in the AMS update by themselves. For shelf spools, change the amount here when you use some.</p>
+    <div class="two">
+      <label class="f"><span>Colour name</span><input id="s-name" required placeholder="Bambu Green"></label>
+      <label class="f"><span>Colour</span><input id="s-hex" type="color" value="#00ae42"></label>
+    </div>
+    <div class="two">
+      <label class="f"><span>Type</span><input id="s-type" list="types" placeholder="PLA Basic"></label>
+      <label class="f"><span>Brand</span><input id="s-brand" list="brands" placeholder="Bambu Lab"></label>
+    </div>
+    <label class="f"><span>Grams left</span><input id="s-grams" type="number" min="0" max="5000" step="1" value="1000"></label>
+    <datalist id="types"><option>PLA Basic</option><option>PLA Matte</option><option>PLA</option><option>PETG</option><option>Support for PLA</option></datalist>
+    <datalist id="brands"><option>Bambu Lab</option><option>Generic</option><option>Elegoo</option><option>Sunlu</option><option>eSun</option></datalist>
+    <div class="actions">
+      <button class="btn danger" type="button" id="delete-spool">Remove spool</button>
+      <span class="spacer"></span>
+      <button class="btn" type="button" id="cancel-spool">Cancel</button>
+      <button class="btn primary" type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const el = (tag, attrs = {}, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs)) { if (k === 'text') e.textContent = v; else if (k === 'style') e.setAttribute('style', v); else e.setAttribute(k, v); } kids.forEach(k => k != null && e.append(k)); return e; };
+
+  // The shop's colours, so each spool shows which website colour it is.
+  const SITE = [['Red','#d8343a'],['Orange','#f07a22'],['Yellow','#f5cf2a'],['Light green','#8fd96a'],['Green','#00ae42'],['Sky blue','#4aa3f0'],
+    ['Cyan','#0086d6'],['Purple','#5a2fb8'],['Magenta','#d1338f'],['Hot pink','#f5547c'],['Brown','#7a4a2c'],['Gray','#8e9089'],
+    ['Black','#1e1d24'],['Matte black','#2a2a2e'],['White','#ecebf3'],['Matte white','#e2e1e5']];
+  const LOW_G = 150, FULL_G = 1000;
+
+  const rgb = h => { const m = String(h || '').replace('#', ''); return m.length >= 6 ? [0, 2, 4].map(i => parseInt(m.slice(i, i + 2), 16)) : [128, 128, 128]; };
+  const dist = (a, b) => { const x = rgb(a), y = rgb(b); return Math.sqrt(x.reduce((s, v, i) => s + (v - y[i]) ** 2, 0)); };
+  const siteColour = (hex, type) => {
+    let best = SITE.reduce((b, c) => dist(hex, c[1]) < dist(hex, b[1]) ? c : b)[0];
+    const matte = /matte/i.test(type || '');
+    if (matte && (best === 'Black' || best === 'White')) best = 'Matte ' + best.toLowerCase();
+    if (!matte && best.startsWith('Matte ')) best = best[6].toUpperCase() + best.slice(7);
+    return best;
+  };
+  const kg = g => g >= 1000 ? (g / 1000).toFixed(g >= 10000 ? 0 : 1) : String(Math.round(g));
+
+  // Talks to the Python side (inside the app), or a demo printer when opened in a normal browser with ?demo.
+  const toApp = msg => { try { window.webkit.messageHandlers.ams.postMessage(JSON.stringify(msg)); } catch (e) { demo && demo(msg); } };
+
+  let printer = {}, spools = [], live = { ams: [], job: {} }, filter = 'all', editing = null;
+
+  /* ---------- AMS ↔ my spools ---------- */
+  // Each AMS slot is linked to the closest matching spool in "My filament", and that spool's grams follow the printer.
+  function syncFromAms() {
+    let changed = false;
+    const trays = (live.ams || []).filter(t => !t.empty);
+    const taken = new Set();
+    spools.forEach(s => { if (s.slot && !trays.some(t => t.key === s.slot)) { delete s.slot; delete s.slotName; changed = true; } });
+    trays.forEach(t => {
+      const grams = t.remain >= 0 ? Math.round(t.remain / 100 * (t.weight || FULL_G)) : null;
+      let match = spools.find(s => s.slot === t.key && dist(s.hex, t.hex) < 60);
+      if (!match) {
+        const cands = spools.filter(s => !taken.has(s.id) && !s.slot && dist(s.hex, t.hex) < 60 && !s.support === !/support/i.test(t.name));
+        cands.sort((a, b) => (dist(a.hex, t.hex) - dist(b.hex, t.hex)) || (grams == null ? 0 : Math.abs(a.grams - grams) - Math.abs(b.grams - grams)));
+        match = cands[0];
+      }
+      if (!match) return;
+      taken.add(match.id);
+      if (match.slot !== t.key) { match.slot = t.key; changed = true; }
+      if (match.slotName !== t.where) { match.slotName = t.where; changed = true; }
+      if (grams != null && match.grams !== grams) { match.grams = grams; changed = true; }
+    });
+    if (changed) save();
+  }
+  let saveTimer = 0;
+  function save() { clearTimeout(saveTimer); saveTimer = setTimeout(() => toApp({ type: 'saveSpools', spools }), 400); }
+
+  /* ---------- drawing ---------- */
+  function spoolDot(hex, pct, small) {
+    return el('div', { class: 'spool' + (small ? ' sm' : ''), style: `--c:${hex};--p:${Math.max(3, Math.min(100, pct))}`, 'aria-hidden': 'true' });
+  }
+
+  function renderHeader() {
+    const has = printer.ip && printer.serial && printer.hasCode;
+    $('pr-name').textContent = has ? (printer.name || 'My printer') : 'No printer yet';
+    const dot = $('dot');
+    let status, cls;
+    if (!has) { status = 'Set it up to see live filament'; cls = ''; }
+    else if (live.connected) { status = `Live · ${printer.model || 'Bambu'} at ${printer.ip}`; cls = 'live'; }
+    else if (live.connecting) { status = 'Connecting…'; cls = 'wait'; }
+    else { status = 'Offline'; cls = 'off'; }
+    $('pr-status').textContent = status;
+    dot.className = 'dot ' + cls;
+    const banner = $('banner');
+    if (!has) { banner.hidden = false; banner.className = 'banner info'; $('banner-text').textContent = 'Connect your printer once and this page fills itself in: the AMS spools, how much is left, and what it’s printing.'; $('banner-btn').textContent = 'Connect printer'; }
+    else if (live.error) { banner.hidden = false; banner.className = 'banner'; $('banner-text').textContent = live.error; $('banner-btn').textContent = 'Printer settings'; }
+    else banner.hidden = true;
+  }
+
+  function renderTiles() {
+    const real = spools.filter(s => !s.support);
+    const total = spools.reduce((s, x) => s + (x.grams || 0), 0);
+    $('t-total').replaceChildren(kg(total), el('small', { text: total >= 1000 ? 'kg' : 'g' }));
+    $('t-spools').textContent = String(spools.length);
+    const low = real.filter(s => s.grams < LOW_G);
+    $('t-low').textContent = String(low.length);
+    $('t-low-label').textContent = low.length ? 'running low: ' + low.map(s => s.name).join(', ') : 'running low';
+    $('t-site').textContent = String(new Set(real.filter(s => s.grams >= 50 && !s.noSite).map(s => siteColour(s.hex, s.type))).size);
+  }
+
+  const STATES = { RUNNING: ['Printing', 'printing'], PREPARE: ['Getting ready', 'printing'], SLICING: ['Getting ready', 'printing'], PAUSE: ['Paused', 'paused'],
+    FINISH: ['Finished', 'done'], FAILED: ['Failed', 'failed'], IDLE: ['Idle', ''] };
+  function renderJob() {
+    const j = live.job || {};
+    const [label, cls] = live.connected ? (STATES[j.state] || ['Idle', '']) : [live.connecting ? 'Connecting' : 'Offline', ''];
+    const pill = $('job-pill'); pill.textContent = label; pill.className = 'pill ' + cls;
+    const busy = live.connected && ['RUNNING', 'PAUSE', 'PREPARE', 'SLICING'].includes(j.state);
+    $('job-live').hidden = !busy; $('job-idle').hidden = busy;
+    if (busy) {
+      $('job-name').textContent = (j.name || 'Print').replace(/\.(gcode\.)?3mf$/i, '');
+      $('job-layers').textContent = j.layers ? `Layer ${j.layer || 0} of ${j.layers}` : '';
+      const pct = Math.round(j.percent || 0);
+      $('job-bar').style.width = pct + '%';
+      $('job-pct').textContent = pct + '%';
+      const m = Math.round(j.minutesLeft || 0);
+      $('job-left').textContent = m ? `${m >= 60 ? Math.floor(m / 60) + ' h ' : ''}${m % 60} min left` : '';
+    } else {
+      $('job-idle-text').textContent = !live.connected ? (printer.hasCode ? 'Not connected right now' : 'Connect your printer to see what it’s doing')
+        : j.state === 'FINISH' ? `Finished ${(j.name || 'the last print').replace(/\.(gcode\.)?3mf$/i, '')}` : 'Ready for the next print';
+    }
+    const t = (v, id) => { $(id).textContent = v == null || !live.connected ? '–' : Math.round(v) + '°'; };
+    t(j.nozzle, 't-nozzle'); t(j.bed, 't-bed');
+    $('t-nozzle-t').textContent = live.connected && j.nozzleTarget ? `→ ${Math.round(j.nozzleTarget)}°` : '';
+    $('t-bed-t').textContent = live.connected && j.bedTarget ? `→ ${Math.round(j.bedTarget)}°` : '';
+  }
+
+  function renderAms() {
+    const box = $('slots');
+    const trays = live.ams && live.ams.length ? live.ams : [1, 2, 3, 4].map(i => ({ where: `Slot ${i}`, empty: true, placeholder: true }));
+    $('ams-sub').textContent = live.connected ? (live.amsHumidity ? `Live · humidity level ${live.amsHumidity} of 5` : 'Live from the printer') : 'Shows up when the printer is connected';
+    box.replaceChildren(...trays.map(t => {
+      if (t.empty) return el('div', { class: 'slot' }, el('span', { class: 'where', text: t.where }), el('div', { class: 'spool empty' }), el('span', { class: 'nm', text: t.placeholder ? '–' : 'Empty' }), el('span', { class: 'unk', text: ' ' }), el('div', { class: 'tags' }));
+      const grams = t.remain >= 0 ? Math.round(t.remain / 100 * (t.weight || FULL_G)) : null;
+      const linked = spools.find(s => s.slot === t.key);
+      const name = linked ? linked.name : t.name;
+      const low = grams != null ? grams < LOW_G : linked ? linked.grams < LOW_G : false;
+      return el('div', { class: 'slot' + (t.active ? ' active' : '') },
+        el('span', { class: 'where', text: t.where }),
+        spoolDot(t.hex, t.remain >= 0 ? t.remain : linked ? linked.grams / FULL_G * 100 : 100),
+        el('span', { class: 'nm', text: name }),
+        grams != null ? el('span', { class: 'amt' }, String(grams), el('small', { text: ' g' })) : el('span', { class: 'unk', text: linked ? `${linked.grams} g (your number)` : 'No RFID tag' }),
+        el('div', { class: 'tags' }, t.active ? el('span', { class: 'pill now', text: 'Printing' }) : null, low ? el('span', { class: 'pill low', text: 'Low' }) : null));
+    }));
+  }
+
+  function renderSpools() {
+    const list = spools.slice().sort((a, b) => (!!b.slot - !!a.slot) || (a.slot || '').localeCompare(b.slot || '') || (!!a.support - !!b.support) || b.grams - a.grams);
+    const shown = list.filter(s => filter === 'all' || (filter === 'ams' ? s.slot : (!s.support && s.grams < LOW_G)));
+    const box = $('spools');
+    if (!shown.length) { box.replaceChildren(el('p', { class: 'empty-note', text: filter === 'low' ? 'Nothing is running low.' : filter === 'ams' ? 'No spools linked to the AMS yet. They link by themselves when the printer is connected.' : 'No spools yet. Add one.' })); return; }
+    box.replaceChildren(...shown.map(s => {
+      const low = !s.support && s.grams < LOW_G;
+      const b = el('button', { class: 'sp' + (low ? ' islow' : ''), type: 'button', style: `--c:${s.hex}`, 'aria-label': `${s.name}, ${s.type}, ${s.grams} grams. Edit.` },
+        spoolDot(s.hex, s.grams / FULL_G * 100, true),
+        el('div', { class: 'info' },
+          el('div', { class: 'row1' }, el('span', { class: 'nm', text: s.name }),
+            s.slot ? el('span', { class: 'pill ams', text: s.slotName || 'AMS' }) : null,
+            low ? el('span', { class: 'pill low', text: 'Low' }) : null),
+          el('div', { class: 'meta' }, [s.type, s.brand].filter(Boolean).join(' · '), s.support || s.noSite ? null : el('br'), s.support || s.noSite ? null : el('i', { text: 'Website: ' + siteColour(s.hex, s.type) })),
+          el('div', { class: 'bar' }, el('i', { style: `width:${Math.min(100, s.grams / FULL_G * 100)}%` })),
+          el('div', { class: 'g' }, el('span', { text: s.slot && live.connected ? 'Live from the AMS' : 'On the shelf' }), el('b', { text: `${s.grams} g` }))));
+      b.addEventListener('click', () => openSpool(s));
+      return b;
+    }));
+  }
+
+  function renderAll() { renderHeader(); renderTiles(); renderJob(); renderAms(); renderSpools(); }
+
+  /* ---------- printer settings ---------- */
+  function openPrinter() {
+    $('p-name').value = printer.name || ''; $('p-ip').value = printer.ip || ''; $('p-serial').value = printer.serial || '';
+    $('p-code').value = ''; $('p-code').placeholder = printer.hasCode ? 'Saved (type a new one to change it)' : '8 characters';
+    $('found').textContent = ''; $('found').className = 'found';
+    $('forget').hidden = !printer.ip;
+    $('dlg-printer').showModal();
+  }
+  $('open-settings').addEventListener('click', openPrinter);
+  $('banner-btn').addEventListener('click', openPrinter);
+  $('cancel-printer').addEventListener('click', () => $('dlg-printer').close());
+  $('find').addEventListener('click', () => { $('find').disabled = true; $('found').className = 'found'; $('found').textContent = 'Looking on the Wi-Fi (about 8 seconds)…'; toApp({ type: 'find' }); });
+  $('form-printer').addEventListener('submit', e => {
+    const ip = $('p-ip').value.trim(), serial = $('p-serial').value.trim(), code = $('p-code').value.trim();
+    if (!ip || !serial || (!code && !printer.hasCode)) { e.preventDefault(); $('found').className = 'found bad'; $('found').textContent = 'Fill in the IP address, serial number and access code.'; return; }
+    toApp({ type: 'savePrinter', name: $('p-name').value.trim() || 'My P1S', ip, serial, code, model: printer.model || '' });
+  });
+  let armed = false;
+  $('forget').addEventListener('click', () => {
+    if (!armed) { armed = true; $('forget').textContent = 'Click again to forget'; setTimeout(() => { armed = false; $('forget').textContent = 'Forget printer'; }, 3000); return; }
+    toApp({ type: 'forgetPrinter' }); $('dlg-printer').close();
+  });
+
+  /* ---------- spools ---------- */
+  function openSpool(s) {
+    editing = s || null;
+    $('spool-title').textContent = s ? 'Edit spool' : 'Add a spool';
+    $('s-name').value = s ? s.name : ''; $('s-hex').value = s ? s.hex : '#00ae42';
+    $('s-type').value = s ? s.type : 'PLA Basic'; $('s-brand').value = s ? s.brand : 'Bambu Lab'; $('s-grams').value = s ? s.grams : 1000;
+    $('delete-spool').hidden = !s;
+    $('dlg-spool').showModal();
+  }
+  $('add-spool').addEventListener('click', () => openSpool(null));
+  $('cancel-spool').addEventListener('click', () => $('dlg-spool').close());
+  $('form-spool').addEventListener('submit', () => {
+    const data = { name: $('s-name').value.trim() || 'Spool', hex: $('s-hex').value, type: $('s-type').value.trim() || 'PLA', brand: $('s-brand').value.trim(),
+      grams: Math.max(0, Math.round(Number($('s-grams').value) || 0)) };
+    data.support = /support/i.test(data.type);
+    if (editing) Object.assign(editing, data); else spools.push({ id: 's' + Date.now().toString(36), ...data });
+    save(); renderAll();
+  });
+  let armedDel = false;
+  $('delete-spool').addEventListener('click', () => {
+    if (!armedDel) { armedDel = true; $('delete-spool').textContent = 'Click again to remove'; setTimeout(() => { armedDel = false; $('delete-spool').textContent = 'Remove spool'; }, 3000); return; }
+    spools = spools.filter(s => s !== editing); save(); $('dlg-spool').close(); renderAll();
+  });
+
+  document.querySelectorAll('[data-f]').forEach(b => b.addEventListener('click', () => {
+    filter = b.dataset.f; document.querySelectorAll('[data-f]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderSpools();
+  }));
+
+  /* ---------- messages from the app ---------- */
+  window.fromApp = msg => {
+    if (msg.type === 'config') { printer = msg.printer || {}; spools = msg.spools || []; renderAll(); }
+    else if (msg.type === 'state') { live = msg; syncFromAms(); renderAll(); }
+    else if (msg.type === 'found') {
+      $('find').disabled = false;
+      const p = (msg.printers || [])[0];
+      if (!p) { $('found').className = 'found bad'; $('found').textContent = 'Couldn’t find it. Type the IP from the printer’s screen (Settings → Network) and the serial (Settings → Device).'; return; }
+      $('p-ip').value = p.ip; $('p-serial').value = p.serial; if (!$('p-name').value) $('p-name').value = p.name;
+      printer.model = p.model;
+      $('found').textContent = `Found ${p.name} (${p.model || 'Bambu'}) at ${p.ip}. Now type the access code.`;
+      $('p-code').focus();
+    }
+  };
+
+  /* ---------- demo mode (opened in a normal browser with ?demo) ---------- */
+  const demo = /[?&]demo/.test(location.search) ? msg => {
+    if (msg.type === 'ready') {
+      setTimeout(() => window.fromApp({ type: 'config', printer: { name: 'Daniel’s P1S', ip: '192.168.1.77', serial: '01P00A123456789', model: 'P1S', hasCode: true }, spools: window.DEMO_SPOOLS || [] }), 10);
+      setTimeout(() => window.fromApp({ type: 'state', connected: true, error: '', hasData: true, amsHumidity: '4',
+        ams: [{ key: '0-0', where: 'Slot 1', type: 'PLA', name: 'PLA Matte', hex: '#000000', remain: 65, weight: 1000 },
+              { key: '0-1', where: 'Slot 2', type: 'PLA', name: 'PLA Basic', hex: '#00ae42', remain: 4, weight: 1000, active: false },
+              { key: '0-2', where: 'Slot 3', type: 'PLA', name: 'PLA', hex: '#f72323', remain: -1, weight: 1000, active: true },
+              { key: '0-3', where: 'Slot 4', type: 'PLA', name: 'PLA Matte', hex: '#fffff0', remain: 100, weight: 1000 }],
+        job: { state: 'RUNNING', percent: 46, minutesLeft: 38, name: '3-key clicker CK-1042.gcode.3mf', layer: 61, layers: 132, nozzle: 219.6, nozzleTarget: 220, bed: 54.8, bedTarget: 55 } }), 30);
+    }
+    if (msg.type === 'find') setTimeout(() => window.fromApp({ type: 'found', printers: [{ ip: '192.168.1.77', serial: '01P00A123456789', name: 'Daniel’s P1S', model: 'P1S' }] }), 600);
+  } : null;
+
+  renderAll();
+  toApp({ type: 'ready' });
+})();
+</script>
+</body>
+</html>

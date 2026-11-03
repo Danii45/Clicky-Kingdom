@@ -153,7 +153,7 @@ input[type="color"] { padding: 4px; height: 46px; cursor: pointer; }
 .found.bad { color: var(--bad); }
 
 @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } .tiles { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 560px) { .slots { grid-template-columns: repeat(2, 1fr); } h1 { font-size: 34px; } .wrap { padding: 20px 16px 40px; } }
+@media (max-width: 560px) { .slots { grid-template-columns: repeat(2, 1fr) !important; } h1 { font-size: 34px; } .wrap { padding: 20px 16px 40px; } }
 </style>
 </head>
 <body>
@@ -228,7 +228,7 @@ input[type="color"] { padding: 4px; height: 46px; cursor: pointer; }
 <dialog id="dlg-printer">
   <form method="dialog" id="form-printer">
     <h2>Your printer</h2>
-    <p class="sub">Saved on this computer, so it connects by itself every time you open the app. This computer has to be on the same Wi-Fi as the printer.</p>
+    <p class="sub">Saved on this device, so it connects by itself every time you open the app. This device has to be on the same Wi-Fi as the printer.</p>
     <button class="btn" type="button" id="find" style="width:100%;margin-bottom:12px">Find my printer on the Wi-Fi</button>
     <div class="found" id="found"></div>
     <label class="f"><span>Name</span><input id="p-name" placeholder="Daniel's P1S" autocomplete="off"></label>
@@ -294,7 +294,12 @@ input[type="color"] { padding: 4px; height: 46px; cursor: pointer; }
   const kg = g => g >= 1000 ? (g / 1000).toFixed(g >= 10000 ? 0 : 1) : String(Math.round(g));
 
   // Talks to the Python side (inside the app), or a demo printer when opened in a normal browser with ?demo.
-  const toApp = msg => { try { window.webkit.messageHandlers.ams.postMessage(JSON.stringify(msg)); } catch (e) { demo && demo(msg); } };
+  const toApp = msg => {
+    const s = JSON.stringify(msg);
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.ams) return window.webkit.messageHandlers.ams.postMessage(s);   // Kubuntu app
+    if (window.AndroidAms) return window.AndroidAms.postMessage(s);   // phone app
+    if (demo) demo(msg);
+  };
 
   let printer = {}, spools = [], live = { ams: [], job: {} }, filter = 'all', editing = null;
 
@@ -387,6 +392,7 @@ input[type="color"] { padding: 4px; height: 46px; cursor: pointer; }
     const box = $('slots');
     const trays = live.ams && live.ams.length ? live.ams : [1, 2, 3, 4].map(i => ({ where: `Slot ${i}`, empty: true, placeholder: true }));
     $('ams-sub').textContent = live.connected ? (live.amsHumidity ? `Live · humidity level ${live.amsHumidity} of 5` : 'Live from the printer') : 'Shows up when the printer is connected';
+    box.style.gridTemplateColumns = `repeat(${Math.min(Math.max(trays.length, 4), 5)}, 1fr)`;
     box.replaceChildren(...trays.map(t => {
       if (t.empty) return el('div', { class: 'slot' }, el('span', { class: 'where', text: t.where }), el('div', { class: 'spool empty' }), el('span', { class: 'nm', text: t.placeholder ? '–' : 'Empty' }), el('span', { class: 'unk', text: ' ' }), el('div', { class: 'tags' }));
       const grams = t.remain >= 0 ? Math.round(t.remain / 100 * (t.weight || FULL_G)) : null;
@@ -499,7 +505,8 @@ input[type="color"] { padding: 4px; height: 46px; cursor: pointer; }
         ams: [{ key: '0-0', where: 'Slot 1', type: 'PLA', name: 'PLA Matte', hex: '#000000', remain: 65, weight: 1000 },
               { key: '0-1', where: 'Slot 2', type: 'PLA', name: 'PLA Basic', hex: '#00ae42', remain: 4, weight: 1000, active: false },
               { key: '0-2', where: 'Slot 3', type: 'PLA', name: 'PLA', hex: '#f72323', remain: -1, weight: 1000, active: true },
-              { key: '0-3', where: 'Slot 4', type: 'PLA', name: 'PLA Matte', hex: '#fffff0', remain: 100, weight: 1000 }],
+              { key: '0-3', where: 'Slot 4', type: 'PLA', name: 'PLA Matte', hex: '#fffff0', remain: 100, weight: 1000 },
+              { key: 'ext', where: 'External', type: 'PLA', name: 'PLA Basic', hex: '#8e9089', remain: -1, weight: 1000 }],
         job: { state: 'RUNNING', percent: 46, minutesLeft: 38, name: '3-key clicker CK-1042.gcode.3mf', layer: 61, layers: 132, nozzle: 219.6, nozzleTarget: 220, bed: 54.8, bedTarget: 55 } }), 30);
     }
     if (msg.type === 'find') setTimeout(() => window.fromApp({ type: 'found', printers: [{ ip: '192.168.1.77', serial: '01P00A123456789', name: 'Daniel’s P1S', model: 'P1S' }] }), 600);

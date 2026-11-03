@@ -200,6 +200,8 @@ option { background: var(--surface); color: var(--ink); }
 .fil { width: 2.75rem; height: 2.75rem; border-radius: 50%; padding: 0; cursor: pointer; border: 0; background: var(--c);
   box-shadow: inset 0 0 0 1px var(--swatch-ring); transition: transform .15s, box-shadow .15s; }
 .fil.matte, .preset i.matte { background: radial-gradient(rgba(128,128,128,.25) 1px, transparent 1.3px) 0 0 / 4px 4px, var(--c); }
+.fil.low { position: relative; }
+.fil.low::after { content: 'low'; position: absolute; left: 50%; bottom: -.45rem; transform: translateX(-50%); font: 700 .6rem/1.35 var(--font, sans-serif); text-transform: uppercase; letter-spacing: .04em; color: #fff; background: #e0531b; border-radius: .4rem; padding: 0 .3rem; pointer-events: none; }
 .fil:active { transform: scale(.94); }
 .fil[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--swatch-ring), 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
 .presets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .4rem; }
@@ -652,7 +654,7 @@ footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; hei
     { id: 'orange',  name: 'Orange',      hex: '#f07a22' },
     { id: 'yellow',  name: 'Yellow',      hex: '#f5cf2a' },
     { id: 'lgreen',  name: 'Light green', hex: '#8fd96a' },
-    { id: 'green',   name: 'Green',       hex: '#00ae42' }, // Bambu Lab PLA Basic Bambu Green
+    { id: 'green',   name: 'Green',       hex: '#00ae42', low: true }, // Bambu Lab PLA Basic Bambu Green
     { id: 'blue',    name: 'Sky blue',    hex: '#4aa3f0' },
     { id: 'cyan',    name: 'Cyan',        hex: '#0086d6' }, // Bambu Lab PLA Basic Cyan (10603)
     { id: 'purple',  name: 'Purple',      hex: '#5a2fb8' },
@@ -665,6 +667,8 @@ footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; hei
     { id: 'white',   name: 'White',       hex: '#ecebf3', rough: .32 },
     { id: 'mwhite',  name: 'Matte white', hex: '#e2e1e5', rough: .95, matte: true }
   ];
+  // low: true shows "low supply" next to that colour (delete it when a new spool arrives).
+  const filLabel = f => f.name + (f.low ? ' (low supply)' : '');
   // Keycaps-only orders: dollars per keycap, and the smallest number someone can order.
   const CAP_PRICE = 0.5, MIN_CAPS = 2;
   // Clicker layouts: keys in columns × rows, and the price in dollars (paid in person).
@@ -822,7 +826,7 @@ footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; hei
          ...(state.extra ? [[`${state.extra} extra keycap${state.extra > 1 ? 's' : ''}`, ` in ${byId(FILAMENT, state.extraCap).name.toLowerCase()}, ${capsTotal(state.extra)}`]] : []),
          ['Printed for you', ' on our Bambu Lab P1']];
     $('incl').replaceChildren(...items.map(([b, rest]) => el('li', {}, el('span', {}, el('b', { text: b }), rest))));
-    $('case-name').textContent = byId(FILAMENT, state.caseFil).name;
+    $('case-name').textContent = filLabel(byId(FILAMENT, state.caseFil));
     const ul = $('o-lines');
     ul.replaceChildren(...designLines().map(([k, v], idx) => {
       const right = el('span');
@@ -840,7 +844,7 @@ footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; hei
       for (let i = 0; i < state.caps; i++) {
         const s = state.slots[i];
         const capSel = el('select', { class: 'select', id: `slot-cap-${i}`, 'aria-label': `Keycap ${i + 1}: colour` });
-        FILAMENT.forEach(f => capSel.append(el('option', { value: f.id, text: f.name })));
+        FILAMENT.forEach(f => capSel.append(el('option', { value: f.id, text: filLabel(f) })));
         capSel.value = s.cap;
         const bar = el('i', { style: `--kc:${byId(FILAMENT, s.cap).hex}` });
         capSel.addEventListener('change', () => { s.cap = capSel.value; bar.style.setProperty('--kc', byId(FILAMENT, s.cap).hex); refreshLooks(); });
@@ -862,7 +866,7 @@ footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; hei
         keySel = el('span', { class: 'fixed', title: `${avail[0].name} · ${avail[0].feel}`, text: avail[0].name });
       }
       const capSel = el('select', { class: 'select', id: `slot-cap-${i}`, 'aria-label': `Key ${i + 1}: keycap colour` });
-      FILAMENT.forEach(f => capSel.append(el('option', { value: f.id, text: f.name })));
+      FILAMENT.forEach(f => capSel.append(el('option', { value: f.id, text: filLabel(f) })));
       capSel.value = s.cap;
       const bar = el('i', { style: `--kc:${byId(KEYS, s.key).color}` });
       keySel.addEventListener('change', () => { s.key = keySel.value; bar.style.setProperty('--kc', byId(KEYS, s.key).color); refreshLooks(); });
@@ -881,7 +885,7 @@ footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; hei
   function renderCaseFils() {
     const wrap = $('case-fils');
     wrap.replaceChildren(...FILAMENT.map(f => {
-      const b = el('button', { class: 'fil' + (f.clear ? ' clear' : '') + (f.matte ? ' matte' : ''), type: 'button', style: `--c:${f.hex}`, 'aria-label': f.name, title: f.name, 'aria-pressed': String(f.id === state.caseFil) });
+      const b = el('button', { class: 'fil' + (f.clear ? ' clear' : '') + (f.matte ? ' matte' : '') + (f.low ? ' low' : ''), type: 'button', style: `--c:${f.hex}`, 'aria-label': filLabel(f), title: filLabel(f), 'aria-pressed': String(f.id === state.caseFil) });
       b.addEventListener('click', () => {
         state.caseFil = f.id;
         wrap.querySelectorAll('.fil').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
@@ -1537,7 +1541,7 @@ footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; hei
   }
   function renderColourSelect() {
     const s = $('c-colour');
-    FILAMENT.forEach(f => s.append(el('option', { value: f.id, text: f.name })));
+    FILAMENT.forEach(f => s.append(el('option', { value: f.id, text: filLabel(f) })));
     s.value = 'purple';
     swatchSelect(s);
     s.addEventListener('change', () => { if (cMat) applyFil(cMat, byId(FILAMENT, s.value)); });
@@ -1689,7 +1693,7 @@ footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; hei
   });
   if (state.caps < MIN_CAPS) state.caps = MIN_CAPS;
   const xs = $('extra-cap');
-  FILAMENT.forEach(f => xs.append(el('option', { value: f.id, text: f.name })));
+  FILAMENT.forEach(f => xs.append(el('option', { value: f.id, text: filLabel(f) })));
   xs.value = state.extraCap;
   swatchSelect(xs);
   xs.addEventListener('change', () => { state.extraCap = xs.value; updateText(); });

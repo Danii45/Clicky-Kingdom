@@ -1370,8 +1370,11 @@ footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; hei
   // Who handles each order (every order still goes to the shared inbox). Daniel has the matte black,
   // matte white and cyan filament, so those orders are his; every other order takes turns by order number.
   const DANIEL_COLOURS = ['cyan', 'mblack', 'mwhite'];
-  const handlerFor = (code, colours = []) =>
-    colours.some(c => DANIEL_COLOURS.includes(c)) ? 'Daniel' : (parseInt(code.slice(3), 10) % 2 === 0 ? 'Enzo' : 'Daniel');
+  // Enzo's printer is out for repairs, so every order goes to Daniel for now.
+  // To go back to taking turns, change 'Daniel' to '' (empty quotes).
+  const EVERY_ORDER_TO = 'Daniel';
+  const handlerFor = (code, colours = []) => EVERY_ORDER_TO ||
+    (colours.some(c => DANIEL_COLOURS.includes(c)) ? 'Daniel' : (parseInt(code.slice(3), 10) % 2 === 0 ? 'Enzo' : 'Daniel'));
   const assignee = (code, colours = []) => {
     const owner = colours.map(id => byId(FILAMENT, id).owner).find(Boolean);
     const fixed = owner && TEAM.find(p => p.id === owner && p.email.trim());
